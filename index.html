@@ -327,6 +327,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .history-actions {
@@ -350,7 +352,7 @@
         }
         
         th, td {
-            padding: 15px;
+            padding: 12px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
@@ -390,14 +392,17 @@
             display: block;
             margin-bottom: 10px;
             color: var(--dark-color);
+            font-size: 1rem;
         }
         
         .info-box ul {
             padding-left: 20px;
+            margin-bottom: 0;
         }
         
         .info-box li {
             margin-bottom: 5px;
+            line-height: 1.4;
         }
         
         .checkbox-group {
@@ -434,6 +439,7 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 1000;
+            max-width: 300px;
         }
         
         .toast.show {
@@ -457,25 +463,49 @@
             border-left: 4px solid var(--primary-color);
         }
         
+        .real-time-results h3 {
+            margin-top: 0;
+            color: var(--dark-color);
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .real-time-results p {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .real-time-results span {
+            font-weight: 600;
+        }
+        
         .double-day-info {
             display: none;
             background-color: #fff4f4;
             border-left: 4px solid var(--double-day-color);
-            padding: 15px;
+            padding: 12px 15px;
             border-radius: 6px;
             margin-top: 10px;
             font-size: 0.9rem;
+        }
+        
+        .double-day-info strong {
+            color: var(--double-day-color);
         }
         
         .export-actions {
             display: flex;
             gap: 10px;
             margin-top: 20px;
+            flex-wrap: wrap;
         }
         
         .export-actions button {
             width: auto;
             padding: 12px 20px;
+            flex: 1;
+            min-width: 160px;
         }
         
         @media (max-width: 768px) {
@@ -498,6 +528,20 @@
             }
             
             .history-actions, .export-actions {
+                flex-direction: column;
+            }
+            
+            .history-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 0.9rem;
+            }
+            
+            .action-buttons {
                 flex-direction: column;
             }
         }
@@ -538,6 +582,16 @@
             margin-right: 10px;
             text-align: center;
             line-height: 24px;
+        }
+        
+        .group1 {
+            color: var(--group1-color);
+            font-weight: 600;
+        }
+        
+        .group2 {
+            color: var(--group2-color);
+            font-weight: 600;
         }
     </style>
 </head>
@@ -1010,7 +1064,7 @@
                 // Verificar si aplica día doble
                 const shouldApplyDoubleDay = isDoubleDay && isDoubleDayEligible(startDate, isHoliday);
                   
-                // Si es feriado o domingo, todas las horas son extras especiales (or día doble si aplica)
+                // Si es feriado o domingo, todas las horas son extras especiales (o día doble si aplica)
                 if (isHoliday || isHolidayDate(startDate) || isSunday(startDate)) {  
                     if (shouldApplyDoubleDay) {
                         // Aplicar día doble - las primeras 9 horas se pagan como día doble
@@ -1282,7 +1336,7 @@
                 row.innerHTML = `  
                     <td class="${groupClass}">${groupName}</td>  
                     <td>${startDate}</td>  
-                    <td>${endDate</td>  
+                    <td>${endDate}</td>  
                     <td>${startTime}</td>  
                     <td>${endTime}</td>  
                     <td>${totalHours.toFixed(2)}</td>  
@@ -1523,4 +1577,4 @@
     </script>
 
 </body>  
-    </html>
+</html>
