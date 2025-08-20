@@ -226,13 +226,12 @@ document.addEventListener('DOMContentLoaded', function() {
             doubleDayRateGroup.style.display = 'none';
         }
     }
-      
+    
+    // FUNCIÓN PRINCIPAL CORREGIDA - Cálculo de horas con lógica mejorada
     function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
-        // Crear fechas sin ajuste de zona horaria para evitar problemas
         const startDateTime = createDateWithoutTimezone(startDate, startTime);
         const endDateTime = createDateWithoutTimezone(endDate, endTime);
           
-        // Si la hora de fin es anterior a la de inicio, asumimos que es al día siguiente  
         if (endDateTime <= startDateTime) {  
             endDateTime.setDate(endDateTime.getDate() + 1);  
         }  
@@ -240,101 +239,77 @@ document.addEventListener('DOMContentLoaded', function() {
         const diffMs = endDateTime - startDateTime;  
         const totalHours = Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;  
           
-        // Calcular horas normales vs extras  
         let normalHours = 0;  
         let overtimeNormal = 0;  
         let overtimeSpecial = 0;  
         let doubleDayApplied = false;
           
-        // Verificar si aplica día doble
-        const shouldApplyDoubleDay = isDoubleDay && isDoubleDayEligible(startDate, isHoliday);
-          
-        // Si es feriado o domingo, todas las horas son extras especiales (o día doble si aplica)
+        // Si es feriado o domingo
         if (isHoliday || isHolidayDate(startDate) || isSunday(startDate)) {  
+            const shouldApplyDoubleDay = isDoubleDay && isDoubleDayEligible(startDate, isHoliday);
+            
             if (shouldApplyDoubleDay) {
-                // Aplicar día doble - las primeras 9 horas se pagan como día doble
-                if (totalHours <= DOUBLE_DAY_HOURS) {
-                    doubleDayApplied = true;
-                } else {
-                    doubleDayApplied = true;
-                    overtimeSpecial = totalHours - DOUBLE_DAY_HOURS;
-                }
+                doubleDayApplied = true;
+                overtimeSpecial = Math.max(0, totalHours - DOUBLE_DAY_HOURS);
             } else {
-                // Horas extras especiales normales
                 overtimeSpecial = totalHours;
             }
             
-            return {   
-                totalHours,   
-                normalHours: 0,   
-                overtimeHours: { normal: 0, special: overtimeSpecial },
-                doubleDayApplied
-            };  
+            return { totalHours, normalHours: 0, overtimeHours: { normal: 0, special: overtimeSpecial }, doubleDayApplied };  
         }  
           
-        // Obtener el horario laboral según el grupo seleccionado  
         const schedule = WORK_SCHEDULES[workGroup];  
-          
-        // Para calcular distribución de horas entre normales y extras  
         let currentTime = new Date(startDateTime);  
         
-        // Ajustar para manejar correctamente los periodos que cruzan días
         while (currentTime < endDateTime) {  
-            const segmentEnd = new Date(currentTime);  
-            segmentEnd.setHours(segmentEnd.getHours() + 1);  
-            
-            if (segmentEnd > endDateTime) {  
-                segmentEnd.setTime(endDateTime.getTime());  
-            }  
-            
-            const hourDuration = (segmentEnd - currentTime) / (1000 * 60 * 60);  
+            const segmentEnd = new Date(Math.min(currentTime.getTime() + 3600000, endDateTime.getTime()));
+            const hourDuration = (segmentEnd - currentTime) / 3600000;  
             const dayOfWeek = currentTime.getDay();  
             const hourOfDay = currentTime.getHours();  
+            
+            const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
+            const isSat = dayOfWeek === 6;
+            const isSun = dayOfWeek === 0;
+            
+            let daySchedule = null;
+            if (isWeekday) daySchedule = schedule.weekday;
+            if (isSat) daySchedule = schedule.saturday;
+            
+            let isWithinSchedule = false;
+            if (daySchedule) {
+                isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
+            }
+            
+            if (isWithinSchedule) {
+                normalHours += hourDuration;
+            } else {
+                // Determinar tipo de hora extra - LÓGICA CORREGIDA
+                if (isSun) {
+                    // Domingo - todas las horas son extras especiales
+                    overtimeSpecial += hourDuration;
+                } else if (isSat) {
+                    // Sábado
+                    if (hourOfDay < (daySchedule?.start || 0)) {
+                        // Antes del horario laboral del sábado - extras normales
+                        overtimeNormal += hourDuration;
+                    } else {
+                        // Después del horario laboral del sábado - extras especiales
+                        overtimeSpecial += hourDuration;
+                    }
+                } else {
+                    // Lunes a Viernes
+                    if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
+                        // Lunes entre 12:00am y 12:59am - todavía es domingo por la noche (especial)
+                        overtimeSpecial += hourDuration;
+                    } else {
+                        // Resto de la semana - extras normales
+                        overtimeNormal += hourDuration;
+                    }
+                }
+            }
               
-            // Determinar si es día laboral  
-            const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5; // Lunes a Viernes  
-            const isSaturday = dayOfWeek === 6; // Sábado  
-              
-            // Obtener el horario correspondiente al día  
-            let daySchedule = null;  
-            if (isWeekday) {  
-                daySchedule = schedule.weekday;  
-            } else if (isSaturday) {  
-                daySchedule = schedule.saturday;  
-            }  
-              
-            // Verificar si la hora actual está dentro del horario laboral  
-            let isWithinSchedule = false;  
-              
-            if (daySchedule) {  
-                isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;  
-            }  
-              
-            if (isWithinSchedule) {  
-                // Hora normal  
-                normalHours += hourDuration;  
-            } else {  
-                // Hora extra - determinar si es normal o especial  
-                if (isSaturday) {  
-                    // Para sábado, depende de si es antes o después del turno  
-                    if (hourOfDay < daySchedule.start) {  
-                        // Antes del inicio del turno del sábado - hora extra normal  
-                        overtimeNormal += hourDuration;  
-                    } else if (hourOfDay >= daySchedule.end) {  
-                        // Después del turno del sábado - hora extra especial  
-                        overtimeSpecial += hourDuration;  
-                    }  
-                } else if (dayOfWeek === 0) {  
-                    // Domingo - todas las horas son extras especiales  
-                    overtimeSpecial += hourDuration;  
-                } else {  
-                    // Luenes a Viernes fuera de horario - hora extra normal  
-                    overtimeNormal += hourDuration;  
-                }  
-            }  
-              
-            currentTime = segmentEnd;  
-        }  
+            currentTime = segmentEnd;
+        }
           
         return {   
             totalHours,   
@@ -516,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.innerHTML = `  
             <td class="${groupClass}">${groupName}</td>  
             <td>${startDate}</td>  
-            <td>${endDate}</td>  
+            <td>${endDate</td>  
             <td>${startTime}</td>  
             <td>${endTime}</td>  
             <td>${totalHours.toFixed(2)}</td>  
@@ -617,7 +592,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Crear blob y descargar
-                // Crear blob y descargar
         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
