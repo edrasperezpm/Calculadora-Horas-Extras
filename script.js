@@ -488,47 +488,48 @@ document.addEventListener('DOMContentLoaded', function() {
     }  
       
     function addToHistoryTable(index, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtime, doubleDay, amount, location, isHoliday) {  
-        const row = document.createElement('tr');  
-          
-        const groupName = getGroupName(workGroup);  
-        const groupClass = workGroup.includes('group1') ? 'group1' : 'group2';  
-          
-        row.innerHTML = `  
-            <td class="${groupClass}">${groupName}</td>  
-            <td>${startDate}</td>  
-            <td>${endDate}</td>  
-            <td>${startTime}</td>  
-            <td>${endTime}</td>  
-            <td>${totalHours.toFixed(2)}</td>  
-            <td class="regular-hours">${normalHours.toFixed(2)}</td>  
-            <td style="color: ${overtime > 0 ? '#3498db' : 'inherit'}">  
-                ${overtime > 0 ? overtime.toFixed(2) : '0'}  
-            </td>  
-            <td style="color: ${doubleDay === 'Sí' ? '#ff6b6b' : 'inherit'}">  
-                ${doubleDay}  
-            </td>  
-            <td>Q${amount.toFixed(2)}</td>  
-            <td>${location}</td>  
-            <td class="no-print action-buttons">
-                <button class="button-warning edit-btn" data-index="${index}">Editar</button>
-                <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
-            </td>  
-        `;  
-          
-        historyTable.appendChild(row);  
-          
-        // Agregar evento al botón de eliminar  
-        row.querySelector('.delete-btn').addEventListener('click', function() {  
-            const indexToDelete = parseInt(this.getAttribute('data-index'));  
-            deleteSchedule(indexToDelete);  
-        });
-        
-        // Agregar evento al botón de editar
-        row.querySelector('.edit-btn').addEventListener('click', function() {
-            const indexToEdit = parseInt(this.getAttribute('data-index'));
-            editSchedule(indexToEdit);
-        });  
-    }  
+    const row = document.createElement('tr');  
+      
+    const groupName = getGroupName(workGroup);  
+    const groupClass = workGroup.includes('group1') ? 'group1' : 'group2';  
+      
+    row.innerHTML = `  
+        <td class="${groupClass}">${groupName}</td>  
+        <td>${startDate}</td>  
+        <td>${endDate}</td>  
+        <td>${startTime}</td>  
+        <td>${endTime}</td>  
+        <td>${totalHours.toFixed(2)}</td>  
+        <td class="regular-hours">${normalHours.toFixed(2)}</td>  
+        <td style="color: ${overtime > 0 ? '#3498db' : 'inherit'}">  
+            ${overtime > 0 ? overtime.toFixed(2) : '0'}  
+        </td>  
+        <td style="color: ${doubleDay === 'Sí' ? '#ff6b6b' : 'inherit'}">  
+            ${doubleDay}  
+        </td>  
+        <td>Q${amount.toFixed(2)}</td>  
+        <td>${location}</td>  
+        <td class="no-print action-buttons">
+            <button class="button-warning edit-btn" data-index="${index}">Editar</button>
+            <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
+        </td>  
+    `;  
+      
+    historyTable.appendChild(row);  
+      
+    // Agregar evento al botón de eliminar  
+    row.querySelector('.delete-btn').addEventListener('click', function() {  
+        const indexToDelete = parseInt(this.getAttribute('data-index'));  
+        deleteSchedule(indexToDelete);  
+    });
+    
+    // Agregar evento al botón de editar
+    row.querySelector('.edit-btn').addEventListener('click', function() {
+        const indexToEdit = parseInt(this.getAttribute('data-index'));
+        editSchedule(indexToEdit);
+    }); 
+      
+    }
       
     function deleteSchedule(index) {  
         if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
