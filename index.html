@@ -5,200 +5,206 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora de Horas Extras</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
- 
-<body>  
-    <div class="container">  
-        <header>  
-            <h1>Calculadora de Horas Extras</h1>  
-            <p class="app-description">Registra tus horarios de trabajo y calcula automáticamente tus horas extras según los horarios laborales definidos</p>  
-        </header>  
-
-        <div class="main-content">  
-            <section class="form-section">  
-                <h2 class="form-title">Registrar Nuevo Horario</h2>  
-                <form id="schedule-form">  
-                    <div class="form-group">  
-                        <label for="worker-name">Nombre del trabajador:</label>  
-                        <input type="text" id="worker-name" placeholder="Nombre completo" required>  
+<body>
+    <div class="container">
+        <header>
+            <h1>Calculadora de Horas Extras</h1>
+            <p class="description">Sistema para calcular y gestionar horas extras para grupos de trabajo</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="form-section">
+                <h2 class="section-title">Registro de Jornada</h2>
+                
+                <div class="info-text">
+                    Complete los datos de la jornada laboral. Los campos marcados con * son obligatorios.
+                </div>
+                
+                <form id="schedule-form">
+                    <div class="form-group">
+                        <label for="worker-name">Nombre del Trabajador *</label>
+                        <input type="text" id="worker-name" placeholder="Ingrese el nombre completo" required>
                     </div>
                     
-                    <div class="form-group">  
-                        <label>Selecciona tu grupo de trabajo:</label>  
-                        <div class="checkbox-container">  
-                            <div class="checkbox-item">  
-                                <input type="radio" id="group1" name="work-group" value="group1" required>  
-                                <label for="group1">Grupo 1  
-                                    <span class="group-label group1-label">L-V: 7:00am-4:00pm, S: 7:00am-11:00am</span>  
-                                </label>  
-                            </div>  
-                            <div class="checkbox-item">  
-                                <input type="radio" id="group2" name="work-group" value="group2">  
-                                <label for="group2">Grupo 2  
-                                    <span class="group-label group2-label">L-V: 8:00am-5:00pm, S: 8:00am-12:00pm</span>  
-                                </label>  
-                            </div>  
-                        </div>  
-                    </div>  
-                      
-                    <div class="form-group">  
-                        <label for="date">Fecha de inicio:</label>  
-                        <input type="date" id="date" required>  
-                    </div>  
-                      
-                    <div class="form-group">  
-                        <label for="start-time">Hora de inicio:</label>  
-                        <input type="time" id="start-time" required>  
-                    </div>  
-                      
-                    <div class="form-group">  
-                        <label for="end-date">Fecha de fin (si pasa de un día a otro):</label>  
-                        <input type="date" id="end-date">  
-                    </div>  
-                      
-                    <div class="form-group">  
-                        <label for="end-time">Hora de fin:</label>  
-                        <input type="time" id="end-time" required>  
-                    </div>  
-                      
-                    <div class="form-group">  
-                        <label for="location">Ubicación:</label>  
-                        <input type="text" id="location" placeholder="Lugar de trabajo" required>  
-                    </div>  
-                      
-                    <div class="form-group">  
-                        <div class="checkbox-group">  
-                            <input type="checkbox" id="is-holiday">  
-                            <label for="is-holiday" class="holiday-label">¿Es día festivo/feriado?</label>  
-                        </div>  
-                    </div>
-
-                    <div class="form-group">  
-                        <div class="checkbox-group">  
-                            <input type="checkbox" id="is-double-day">  
-                            <label for="is-double-day" class="double-day-label">¿Aplicar día doble?</label>  
-                        </div>  
-                        <div class="double-day-info" id="double-day-info">
-                            <strong>Día doble:</strong> Aplicable solo en domingos y festivos. Las primeras 9 horas se pagan como día doble (valor configurable), y las horas adicionales como extras especiales.
+                    <div class="form-group">
+                        <label>Grupo de Trabajo *</label>
+                        <div class="radio-group">
+                            <div class="radio-item">
+                                <input type="radio" id="group1" name="work-group" value="group1" checked>
+                                <label for="group1">Grupo 1 (7:00-16:00)</label>
+                            </div>
+                            <div class="radio-item">
+                                <input type="radio" id="group2" name="work-group" value="group2">
+                                <label for="group2">Grupo 2 (8:00-17:00)</label>
+                            </div>
                         </div>
                     </div>
-
-                    <div class="form-group" id="double-day-rate-group" style="display: none;">  
-                        <label for="double-day-rate">Valor del día doble (Q):</label>  
-                        <input type="number" id="double-day-rate" placeholder="Ej: 250.00" min="0" step="0.01">  
+                    
+                    <div class="form-group">
+                        <label for="date">Fecha de Inicio *</label>
+                        <input type="date" id="date" required>
                     </div>
-                      
-                    <div class="form-group">  
-                        <label for="description">Descripción (opcional):</label>  
-                        <input type="text" id="description" placeholder="Detalles adicionales">  
-                    </div>  
-                      
-                    <button type="submit">Guardar y Calcular</button>  
-                </form>  
+                    
+                    <div class="form-group">
+                        <label for="start-time">Hora de Inicio *</label>
+                        <input type="time" id="start-time" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="end-date">Fecha de Fin</label>
+                        <input type="date" id="end-date">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="end-time">Hora de Fin *</label>
+                        <input type="time" id="end-time" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="location">Ubicación/Lugar de Trabajo *</label>
+                        <input type="text" id="location" placeholder="Ej: Oficina Central, Sitio de Construcción" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is-holiday">
+                            <label for="is-holiday">¿Es día festivo?</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="is-double-day">
+                            <label for="is-double-day">¿Aplica día doble?</label>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="double-day-info" style="display: none;">
+                        <div class="info-text">
+                            El día doble aplica solamente para domingos y días festivos. Se pagará Q250.00 por las primeras 9 horas, y horas extras especiales por el tiempo adicional.
+                        </div>
+                    </div>
+                    
+                    <div class="form-group" id="double-day-rate-group" style="display: none;">
+                        <label for="double-day-rate">Tarifa de Día Doble (Q)</label>
+                        <input type="number" id="double-day-rate" step="0.01" min="0" value="250.00">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="description">Descripción/Notas</label>
+                        <textarea id="description" rows="3" placeholder="Detalles adicionales de la jornada..."></textarea>
+                    </div>
+                    
+                    <button type="submit">Guardar y Calcular</button>
+                </form>
                 
-                <div class="real-time-results">
-                    <h3>Previsualización</h3>
-                    <p>Horas normales: <span id="preview-normal">0.00</span></p>
-                    <p>Horas extras normales: <span id="preview-normal-ot">0.00</span></p>
-                    <p>Horas extras especiales: <span id="preview-special-ot">0.00</span></p>
-                    <p>Día doble: <span id="preview-double-day">No aplica</span></p>
-                    <p>Total estimado: Q<span id="preview-total">0.00</span></p>
-                </div>
-                  
-                <div class="info-box">  
-                    <strong>Información importante:</strong>  
-                    <ul>  
-                        <li><b>Grupo 1:</b> Lunes a Viernes (7:00am - 4:00pm), Sábado (7:00am - 11:00am)</li>  
-                        <li><b>Grupo 2:</b> Lunes a Viernes (8:00am - 5:00pm), Sábado (8:00am - 12:00pm)</li>  
-                        <li>Precio hora extra normal (Lunes 1:00am - Sábado antes del turno): Q23.00</li>  
-                        <li>Precio hora extra especial (Sábado después del turno - Domingo 12:00am): Q31.00</li>  
-                        <li>Domingos y festivos: todas las horas son extras especiales</li>  
-                        <li><b>Día doble:</b> Aplicable solo en domingos y festivos. Las primeras 9 horas se pagan como día doble, horas adicionales como extras especiales</li>  
-                    </ul>  
-                </div>  
-            </section>  
-              
-            <section class="results-section">  
-                <h2 class="results-title">Resumen de Horas</h2>  
-                  
-                <div class="result-card normal-hours">  
-                    <h3><span class="icon">⏰</span> Horas Normales Trabajadas</h3>  
-                    <div class="result-value" id="normal-hours">0.00 horas</div>  
-                    <p class="result-details">Horas dentro del horario regular establecido</p>  
-                </div>  
-                  
-                <div class="result-card overtime-normal">  
-                    <h3><span class="icon">📅</span> Horas Extras Normales (Q23.00/hora)</h3>  
-                    <div class="result-value" id="normal-overtime">0.00 horas</div>  
-                    <p class="result-details">Lunes 1:00am - Sábado antes del turno</p>  
-                    <div class="result-value" id="normal-amount">Q0.00</div>  
-                </div>  
-                  
-                <div class="result-card overtime-special">  
-                    <h3><span class="icon">📅</span> Horas Extras Especiales (Q31.00/hora)</h3>  
-                    <div class="result-value" id="special-overtime">0.00 horas</div>  
-                    <p class="result-details">Sábado después del turno - Domingo 12:00am</p>  
-                    <div class="result-value" id="special-amount">Q0.00</div>  
-                </div>
-
-                <div class="result-card double-day">  
-                    <h3><span class="icon">🎯</span> Días Dobles</h3>  
-                    <div class="result-value" id="double-day-count">0 días</div>  
-                    <p class="result-details">Domingos y festivos con día doble aplicado</p>  
-                    <div class="result-value" id="double-day-amount">Q0.00</div>  
-                </div>
-                  
-                <div class="summary-card">  
-                    <div class="summary-text">Total a recibir por horas extras:</div>  
-                    <div class="summary-value" id="total-amount">Q0.00</div>  
-                </div>
-
-                <div class="export-actions no-print">
-                    <button id="pdf-btn" class="button-success">
-                        <span class="icon">📄</span> Exportar Historial a PDF
-                    </button>
-                    <button id="text-btn" class="button-info">
-                        <span class="icon">📝</span> Exportar a Texto
-                    </button>
-                </div>
-            </section>  
-        </div>  
-          
-        <section class="history-section">  
-            <div class="history-header">
-                <h2 class="history-title">Historial de Horarios</h2>  
-                <div class="history-actions">
-                    <button id="clear-btn" class="button-danger"><span class="icon">🗑️</span> Limpiar Historial</button>
+                <div class="action-buttons">
+                    <button id="clear-btn" class="button-danger">Limpiar Historial</button>
+                    <button id="pdf-btn" class="button-warning">Exportar a PDF</button>
+                    <button id="text-btn" class="button-success">Exportar a Texto</button>
                 </div>
             </div>
-            <table id="schedule-history">  
-                <thead>  
-                    <tr>  
-                        <th>Nombre</th>
-                        <th>Grupo</th>  
-                        <th>Fecha Inicio</th>  
-                        <th>Fecha Fin</th>  
-                        <th>Inicio</th>  
-                        <th>Fin</th>  
-                        <th>Horas Totales</th>  
-                        <th>Horas Normales</th>  
-                        <th>Horas Extras</th>  
-                        <th>Día Doble</th>  
-                        <th>Monto Total</th>  
-                        <th>Ubicación</th>  
-                        <th class="no-print">Acciones</th>  
-                    </tr>  
-                </thead>  
-                <tbody>  
-                    <!-- Los registros se insertarán aquí dinámicamente -->  
-                </tbody>  
-            </table>  
-        </section>  
-    </div>  
-
+            
+            <div class="results-section">
+                <h2 class="section-title">Resultados en Tiempo Real</h2>
+                
+                <div class="results-grid">
+                    <div class="result-card">
+                        <div>Horas Normales</div>
+                        <div id="preview-normal" class="result-value">0.00</div>
+                    </div>
+                    <div class="result-card">
+                        <div>Horas Extras Normales</div>
+                        <div id="preview-normal-ot" class="result-value">0.00</div>
+                    </div>
+                    <div class="result-card">
+                        <div>Horas Extras Especiales</div>
+                        <div id="preview-special-ot" class="result-value">0.00</div>
+                    </div>
+                    <div class="result-card">
+                        <div>Día Doble</div>
+                        <div id="preview-double-day" class="result-value">No aplica</div>
+                    </div>
+                    <div class="result-card" style="grid-column: span 2;">
+                        <div>Total a Pagar</div>
+                        <div id="preview-total" class="result-value">Q0.00</div>
+                    </div>
+                </div>
+                
+                <h2 class="section-title" style="margin-top: 30px;">Historial de Registros</h2>
+                
+                <div class="info-text">
+                    Aquí se muestran los registros guardados. Puede editar o eliminar registros existentes.
+                </div>
+                
+                <table id="schedule-history">
+                    <thead>
+                        <tr>
+                            <th>Nombre</th>
+                            <th>Grupo</th>
+                            <th>Fecha Inicio</th>
+                            <th>Fecha Fin</th>
+                            <th>Inicio</th>
+                            <th>Fin</th>
+                            <th>Horas Totales</th>
+                            <th>Horas Normales</th>
+                            <th>Horas Extras</th>
+                            <th>Día Doble</th>
+                            <th>Total</th>
+                            <th>Ubicación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los registros se insertarán aquí dinámicamente -->
+                    </tbody>
+                </table>
+                
+                <div class="summary-section">
+                    <h2 class="summary-title">Resumen de Horas Extras</h2>
+                    
+                    <div class="summary-grid">
+                        <div class="summary-card">
+                            <div>Horas Normales Totales</div>
+                            <div id="normal-hours" class="result-value">0.00 horas</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Horas Extras Normales</div>
+                            <div id="normal-overtime" class="result-value">0.00 horas</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Horas Extras Especiales</div>
+                            <div id="special-overtime" class="result-value">0.00 horas</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Días Dobles</div>
+                            <div id="double-day-count" class="result-value">0 días</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Monto Total Extras</div>
+                            <div id="normal-amount" class="result-value">Q0.00</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Monto Total Especiales</div>
+                            <div id="special-amount" class="result-value">Q0.00</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Monto Días Dobles</div>
+                            <div id="double-day-amount" class="result-value">Q0.00</div>
+                        </div>
+                        <div class="summary-card">
+                            <div>Total General</div>
+                            <div id="total-amount" class="result-value">Q0.00</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
     <div id="toast" class="toast"></div>
 
     <script src="script.js"></script>
-</body>  
+</body>
 </html>
