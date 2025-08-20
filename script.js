@@ -279,7 +279,7 @@ function checkDoubleDayEligibility() {
     }
 }
 
-// FUNCIÓN COMPLETAMENTE CORREGIDA - Maneja transiciones entre días
+// FUNCIÓN COMPLETAMENTE CORREGIDA - Maneja el cálculo de horas con día doble
 function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
     const startDateTime = createDateWithoutTimezone(startDate, startTime);
     const endDateTime = createDateWithoutTimezone(endDate, endTime);
@@ -294,76 +294,100 @@ function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHol
     let overtimeNormal = 0;  
     let overtimeSpecial = 0;  
     
-    const schedule = WORK_SCHEDULES[workGroup];  
-    let currentTime = new Date(startDateTime);
-    
-    // Procesar cada hora del período
-    while (currentTime < endDateTime) {
-        const hourEnd = new Date(currentTime);
-        hourEnd.setHours(currentTime.getHours() + 1);
-        if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
-        
-        const hourDuration = (hourEnd - currentTime) / 3600000;
-        const dayOfWeek = currentTime.getDay();
-        const hourOfDay = currentTime.getHours();
-        const currentDateStr = formatDateForInput(currentTime);
-        
-        // Verificar si es feriado o domingo
-        if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
-            overtimeSpecial += hourDuration;
-            currentTime = hourEnd;
-            continue;
-        }
-        
-        // Para días laborales
-        let daySchedule = null;
-        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-            daySchedule = schedule.weekday;
-        } else if (dayOfWeek === 6) {
-            daySchedule = schedule.saturday;
-        }
-        
-        if (daySchedule) {
-            const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
-            
-            if (isWithinSchedule) {
-                normalHours += hourDuration;
-            } else {
-                // Determinar tipo de hora extra
-                if (dayOfWeek === 6) { // Sábado
-                    if (hourOfDay < daySchedule.start) {
-                        overtimeNormal += hourDuration;
-                    } else {
-                        overtimeSpecial += hourDuration;
-                    }
-                } else { // Lunes a Viernes
-                    // Manejar transición domingo→lunes (12am-1am)
-                    if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
-                        overtimeSpecial += hourDuration;
-                    } else {
-                        overtimeNormal += hourDuration;
-                    }
-                }
-            }
-        } else {
-            // Para cualquier otro caso (debería ser solo domingos, ya manejados arriba)
-            overtimeSpecial += hourDuration;
-        }
-        
-        currentTime = hourEnd;
-    }
-    
-    // Manejar día doble para días festivos/domingos
-    let doubleDayApplied = false;
+    // Determinar si es día doble
     const isStartHoliday = isHoliday || isHolidayDate(startDate) || getDayOfWeek(startDate) === 0;
+    let doubleDayApplied = false;
     
     if (isStartHoliday && isDoubleDay && isDoubleDayEligible(startDate, isHoliday)) {
         doubleDayApplied = true;
-        // Ajustar: las primeras 9 horas se pagan como día doble, el resto como especiales
-        if (totalHours > DOUBLE_DAY_HOURS) {
-            overtimeSpecial = totalHours - DOUBLE_DAY_HOURS;
-        } else {
+        
+        // Calcular horas para día doble
+        const doubleDayEnd = new Date(startDateTime);
+        doubleDayEnd.setHours(doubleDayEnd.getHours() + DOUBLE_DAY_HOURS);
+        
+        // Si el turno termina antes de completar el día doble
+        if (endDateTime <= doubleDayEnd) {
+            // Todas las horas son día doble
+            overtimeNormal = 0;
             overtimeSpecial = 0;
+        } else {
+            // Calcular horas extras especiales (después del día doble hasta medianoche)
+            const midnight = new Date(startDateTime);
+            midnight.setHours(24, 0, 0, 0);
+            
+            // Horas desde el fin del día doble hasta medianoche
+            if (doubleDayEnd < midnight) {
+                const specialEnd = new Date(Math.min(endDateTime, midnight));
+                overtimeSpecial = (specialEnd - doubleDayEnd) / (1000 * 60 * 60);
+            }
+            
+            // Horas desde medianoche hasta el final (extras normales)
+            if (midnight < endDateTime) {
+                overtimeNormal = (endDateTime - midnight) / (1000 * 60 * 60);
+            }
+        }
+        
+        // En día doble, no hay horas normales
+        normalHours = 0;
+    } else {
+        // Cálculo normal (no es día doble)
+        const schedule = WORK_SCHEDULES[workGroup];  
+        let currentTime = new Date(startDateTime);
+        
+        // Procesar cada hora del período
+        while (currentTime < endDateTime) {
+            const hourEnd = new Date(currentTime);
+            hourEnd.setHours(currentTime.getHours() + 1);
+            if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
+            
+            const hourDuration = (hourEnd - currentTime) / 3600000;
+            const dayOfWeek = currentTime.getDay();
+            const hourOfDay = currentTime.getHours();
+            const currentDateStr = formatDateForInput(currentTime);
+            
+            // Verificar si es feriado o domingo
+            if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
+                overtimeSpecial += hourDuration;
+                currentTime = hourEnd;
+                continue;
+            }
+            
+            // Para días laborales
+            let daySchedule = null;
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                daySchedule = schedule.weekday;
+            } else if (dayOfWeek === 6) {
+                daySchedule = schedule.saturday;
+            }
+            
+            if (daySchedule) {
+                const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
+                
+                if (isWithinSchedule) {
+                    normalHours += hourDuration;
+                } else {
+                    // Determinar tipo de hora extra
+                    if (dayOfWeek === 6) { // Sábado
+                        if (hourOfDay < daySchedule.start) {
+                            overtimeNormal += hourDuration;
+                        } else {
+                            overtimeSpecial += hourDuration;
+                        }
+                    } else { // Lunes a Viernes
+                        // Manejar transición domingo→lunes (12am-1am)
+                        if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
+                            overtimeSpecial += hourDuration;
+                        } else {
+                            overtimeNormal += hourDuration;
+                        }
+                    }
+                }
+            } else {
+                // Para cualquier otro caso (debería ser solo domingos, ya manejados arriba)
+                overtimeSpecial += hourDuration;
+            }
+            
+            currentTime = hourEnd;
         }
     }
     
