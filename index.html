@@ -20,6 +20,11 @@
                 <h2 class="form-title">Registrar Nuevo Horario</h2>  
                 <form id="schedule-form">  
                     <div class="form-group">  
+                        <label for="worker-name">Nombre del trabajador:</label>  
+                        <input type="text" id="worker-name" placeholder="Nombre completo" required>  
+                    </div>
+                    
+                    <div class="form-group">  
                         <label>Selecciona tu grupo de trabajo:</label>  
                         <div class="checkbox-container">  
                             <div class="checkbox-item">  
@@ -150,11 +155,11 @@
                 </div>
 
                 <div class="export-actions no-print">
-                    <button id="print-btn" class="button-info">
-                        <span class="icon">🖨️</span> Imprimir Resultados
-                    </button>
                     <button id="pdf-btn" class="button-success">
-                        <span class="icon">📄</span> Exportar a PDF
+                        <span class="icon">📄</span> Exportar Historial a PDF
+                    </button>
+                    <button id="text-btn" class="button-info">
+                        <span class="icon">📝</span> Exportar a Texto
                     </button>
                 </div>
             </section>  
@@ -164,13 +169,13 @@
             <div class="history-header">
                 <h2 class="history-title">Historial de Horarios</h2>  
                 <div class="history-actions">
-                    <button id="export-btn" class="button-secondary"><span class="icon">📊</span> Exportar CSV</button>
                     <button id="clear-btn" class="button-danger"><span class="icon">🗑️</span> Limpiar Historial</button>
                 </div>
             </div>
             <table id="schedule-history">  
                 <thead>  
                     <tr>  
+                        <th>Nombre</th>
                         <th>Grupo</th>  
                         <th>Fecha Inicio</th>  
                         <th>Fecha Fin</th>  
@@ -191,44 +196,6 @@
             </table>  
         </section>  
     </div>  
-
-    <!-- Sección oculta para imprimir -->
-    <div id="print-section" style="display: none;">
-        <h2 style="text-align: center; color: #2c3e50;">Resumen de Horas Extras</h2>
-        <p style="text-align: center; color: #7f8c8d;">Generado el: <span id="print-date"></span></p>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Horas Normales Trabajadas</h3>
-            <p style="font-size: 1.5rem; color: #2ecc71; margin: 10px 0;" id="print-normal-hours">0.00 horas</p>
-            <p style="color: #7f8c8d;">Horas dentro del horario regular establecido</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Horas Extras Normales (Q23.00/hora)</h3>
-            <p style="font-size: 1.5rem; color: #3498db; margin: 10px 0;" id="print-normal-overtime">0.00 horas</p>
-            <p style="color: #7f8c8d;">Lunes 1:00am - Sábado antes del turno</p>
-            <p style="font-size: 1.5rem; color: #3498db; margin: 10px 0;" id="print-normal-amount">Q0.00</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #e67e22; padding-bottom: 10px;">Horas Extras Especiales (Q31.00/hora)</h3>
-            <p style="font-size: 1.5rem; color: #e67e22; margin: 10px 0;" id="print-special-overtime">0.00 horas</p>
-            <p style="color: #7f8c8d;">Sábado después del turno - Domingo 12:00am</p>
-            <p style="font-size: 1.5rem; color: #e67e22; margin: 10px 0;" id="print-special-amount">Q0.00</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #ff6b6b; padding-bottom: 10px;">Días Dobles</h3>
-            <p style="font-size: 1.5rem; color: #ff6b6b; margin: 10px 0;" id="print-double-day-count">0 días</p>
-            <p style="color: #7f8c8d;">Domingos y festivos con día doble aplicado</p>
-            <p style="font-size: 1.5rem; color: #ff6b6b; margin: 10px 0;" id="print-double-day-amount">Q0.00</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border-radius: 5px;">
-            <h3 style="margin: 0; font-size: 1.5rem;">Total a recibir por horas extras:</h3>
-            <p style="font-size: 2.5rem; font-weight: bold; margin: 10px 0;" id="print-total-amount">Q0.00</p>
-        </div>
-    </div>
 
     <div id="toast" class="toast"></div>
 
