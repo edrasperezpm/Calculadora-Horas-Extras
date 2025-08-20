@@ -743,8 +743,49 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
       
-    function updateOvertimeSummary() {  
-        const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
+    // ... (todo el código anterior permanece igual hasta updateOvertimeSummary)
+
+function updateOvertimeSummary() {  
+    const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
+      
+    let totalNormalHours = 0;  
+    let normalOvertime = 0;  
+    let normalAmount = 0;  
+      
+    let specialOvertime = 0;  
+    let specialAmount = 0;  
+    
+    let doubleDayCount = 0;
+    let doubleDayAmount = 0;
+      
+    schedules.forEach(schedule => {  
+        totalNormalHours += schedule.normalHours;  
+        normalOvertime += schedule.overtimeHours.normal;  
+        normalAmount += schedule.normalAmount;  
           
-        let totalNormalHours = 0;  
-        let normalOvertime = 0;  
+        specialOvertime += schedule.overtimeHours.special;  
+        specialAmount += schedule.specialAmount;  
+        
+        if (schedule.doubleDayApplied) {
+            doubleDayCount++;
+            doubleDayAmount += schedule.doubleDayAmount || 0;
+        }
+    });  
+      
+    // Actualizar la interfaz  
+    document.getElementById('normal-hours').textContent = totalNormalHours.toFixed(2) + ' horas';  
+    document.getElementById('normal-overtime').textContent = normalOvertime.toFixed(2) + ' horas';  
+    document.getElementById('normal-amount').textContent = 'Q' + normalAmount.toFixed(2);  
+      
+    document.getElementById('special-overtime').textContent = specialOvertime.toFixed(2) + ' horas';  
+    document.getElementById('special-amount').textContent = 'Q' + specialAmount.toFixed(2);  
+    
+    document.getElementById('double-day-count').textContent = doubleDayCount + ' días';  
+    document.getElementById('double-day-amount').textContent = 'Q' + doubleDayAmount.toFixed(2);
+      
+    // Calcular total  
+    const totalAmount = normalAmount + specialAmount + doubleDayAmount;  
+    document.getElementById('total-amount').textContent = 'Q' + totalAmount.toFixed(2);  
+}  
+
+}); // <-- ESTE ES EL CIERRE QUE FALTABA del DOMContentLoaded
