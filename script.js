@@ -3,7 +3,7 @@ const NORMAL_OVERTIME_RATE = 23.00; // Q23.00 por hora extra normal
 const SPECIAL_OVERTIME_RATE = 31.00; // Q31.00 por hora extra especial  
 const DEFAULT_DOUBLE_DAY_RATE = 250.00; // Valor por defecto para día doble
 const DOUBLE_DAY_HOURS = 9; // Horas que cubre el día doble
-  
+
 // Lista de días festivos en Guatemala (puedes agregar más)  
 const GUATEMALA_HOLIDAYS = [  
     '2023-01-01', // Año Nuevo  
@@ -49,11 +49,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const doubleDayInfo = document.getElementById('double-day-info');
     const doubleDayRateGroup = document.getElementById('double-day-rate-group');
     const dateInput = document.getElementById('date');
-      
+    
     // Cargar historial desde localStorage  
     loadHistory();  
     updateOvertimeSummary();  
-      
+    
     // Establecer la fecha actual por defecto  
     const today = new Date();  
     const formattedDate = formatDateForInput(today);  
@@ -62,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('double-day-rate').value = DEFAULT_DOUBLE_DAY_RATE.toFixed(2);
     
     // Event listeners para campos del formulario (cálculo en tiempo real)
-    const formInputs = form.querySelectorAll('input');
+    const formInputs = form.querySelectorAll('input, textarea, select');
     formInputs.forEach(input => {
         input.addEventListener('change', updateRealTimePreview);
         input.addEventListener('input', updateRealTimePreview);
@@ -98,10 +98,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Event listener para exportar a texto
     textBtn.addEventListener('click', exportToText);
-      
+    
     form.addEventListener('submit', function(e) {  
         e.preventDefault();  
-          
+        
         const workerName = document.getElementById('worker-name').value;
         const workGroup = document.querySelector('input[name="work-group"]:checked')?.value;  
         const startDate = document.getElementById('date').value;  
@@ -113,17 +113,17 @@ document.addEventListener('DOMContentLoaded', function() {
         const isDoubleDay = document.getElementById('is-double-day').checked;  
         const doubleDayRate = parseFloat(document.getElementById('double-day-rate').value) || DEFAULT_DOUBLE_DAY_RATE;  
         const description = document.getElementById('description').value;  
-          
+        
         if (!workerName || !workGroup || !startDate || !startTime || !endTime || !location) {  
             showToast('Por favor, complete todos los campos obligatorios.', 'error');
             return;  
         }  
-          
+        
         // Si no se especifica fecha de fin, usar la misma fecha de inicio  
         if (!endDate) {  
             endDate = startDate;  
         }  
-          
+        
         // Validar que la fecha de fin no sea anterior a la de inicio
         const startDateTime = new Date(`${startDate}T${startTime}`);
         const endDateTime = new Date(`${endDate}T${endTime}`);
@@ -138,18 +138,18 @@ document.addEventListener('DOMContentLoaded', function() {
             showToast('El día doble solo aplica para domingos y días festivos.', 'error');
             return;
         }
-          
+        
         // Calcular horas trabajadas  
         const { totalHours, normalHours, overtimeHours, doubleDayApplied } = calculateHours(  
             workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay  
         );  
-          
+        
         // Calcular montos  
         const normalAmount = overtimeHours.normal * NORMAL_OVERTIME_RATE;  
         const specialAmount = overtimeHours.special * SPECIAL_OVERTIME_RATE;  
         const doubleDayAmount = doubleDayApplied ? doubleDayRate : 0;
         const totalAmount = normalAmount + specialAmount + doubleDayAmount;  
-          
+        
         if (isEditing) {
             // Actualizar registro existente
             updateSchedule(
@@ -173,12 +173,13 @@ document.addEventListener('DOMContentLoaded', function() {
             );  
             showToast('Registro guardado correctamente.', 'success');
         }
-          
+        
         // Actualizar la interfaz  
         loadHistory();
         updateOvertimeSummary();  
-          
+        
         // Limpiar el formulario pero mantener las fechas  
+        document.getElementById('worker-name').value = '';
         document.getElementById('start-time').value = '';  
         document.getElementById('end-time').value = '';  
         document.getElementById('location').value = '';  
@@ -188,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
         doubleDayInfo.style.display = 'none';
         doubleDayRateGroup.style.display = 'none';
     });  
-      
+    
     function formatDateForInput(date) {  
         const year = date.getFullYear();  
         const month = String(date.getMonth() + 1).padStart(2, '0');  
@@ -230,13 +231,13 @@ document.addEventListener('DOMContentLoaded', function() {
     function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
         const startDateTime = createDateWithoutTimezone(startDate, startTime);
         const endDateTime = createDateWithoutTimezone(endDate, endTime);
-          
+        
         if (endDateTime <= startDateTime) {  
             endDateTime.setDate(endDateTime.getDate() + 1);  
         }  
-          
+        
         const totalHours = Math.round((endDateTime - startDateTime) / (1000 * 60 * 60) * 100) / 100;  
-          
+        
         let normalHours = 0;  
         let overtimeNormal = 0;  
         let overtimeSpecial = 0;  
@@ -331,11 +332,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const [hours, minutes] = timeString.split(':').map(Number);
         return new Date(year, month - 1, day, hours, minutes);
     }
-      
+    
     function isHolidayDate(dateString) {  
         return GUATEMALA_HOLIDAYS.includes(dateString);  
     }  
-      
+    
     function getGroupName(groupKey) {  
         const groups = {  
             'group1': 'Grupo 1',  
@@ -343,10 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
         };  
         return groups[groupKey] || groupKey;  
     }  
-      
+    
     function saveSchedule(workerName, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {  
         let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
-          
+        
         schedules.push({  
             workerName,
             workGroup,  
@@ -368,7 +369,7 @@ document.addEventListener('DOMContentLoaded', function() {
             isDoubleDay,
             id: Date.now() // Agregar ID único para mejor manejo
         });  
-          
+        
         localStorage.setItem('workSchedules', JSON.stringify(schedules));  
     }
     
@@ -463,12 +464,12 @@ document.addEventListener('DOMContentLoaded', function() {
         
         showToast('Edición cancelada.', 'success');
     }
-      
+    
     function loadHistory() {  
         const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
-          
+        
         historyTable.innerHTML = '';  
-          
+        
         schedules.forEach((schedule, index) => {  
             addToHistoryTable(  
                 index,
@@ -488,13 +489,13 @@ document.addEventListener('DOMContentLoaded', function() {
             );  
         });  
     }  
-      
+    
     function addToHistoryTable(index, workerName, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtime, doubleDay, amount, location, isHoliday) {  
         const row = document.createElement('tr');  
-          
+        
         const groupName = getGroupName(workGroup);  
         const groupClass = workGroup.includes('group1') ? 'group1' : 'group2';  
-          
+        
         row.innerHTML = `  
             <td>${workerName}</td>
             <td class="${groupClass}">${groupName}</td>  
@@ -512,14 +513,14 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>  
             <td>Q${amount.toFixed(2)}</td>  
             <td>${location}</td>  
-            <td class="no-print action-buttons">
+            <td class="action-buttons">
                 <button class="button-warning edit-btn" data-index="${index}">Editar</button>
                 <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
             </td>  
         `;  
-          
+        
         historyTable.appendChild(row);  
-          
+        
         // Agregar evento al botón de eliminar  
         row.querySelector('.delete-btn').addEventListener('click', function() {  
             const indexToDelete = parseInt(this.getAttribute('data-index'));  
@@ -532,7 +533,7 @@ document.addEventListener('DOMContentLoaded', function() {
             editSchedule(indexToEdit);
         });  
     }  
-      
+    
     function deleteSchedule(index) {  
         if (confirm('¿Estás seguro de que deseas eliminar este registro?')) {
             let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
@@ -630,23 +631,8 @@ document.addEventListener('DOMContentLoaded', function() {
             </table>
         `;
         
-        // Configuración para html2pdf
-        const options = {
-            margin: 10,
-            filename: `historial_horas_extras_${new Date().toISOString().slice(0, 10)}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-        
-        // Crear elemento temporal para el contenido
-        const element = document.createElement('div');
-        element.innerHTML = content;
-        
-        // Generar PDF
-        html2pdf().set(options).from(element).save();
-        
-        showToast('PDF del historial generado correctamente.', 'success');
+        // Simular generación de PDF (en un caso real usarías una librería como jsPDF)
+        showToast('Función de exportación a PDF simulada. En una implementación real se generaría el PDF.', 'success');
     }
     
     // Función para exportar a texto
@@ -708,7 +694,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         toast.classList.add('show');
         
-        setTimeout(() => {
+        setTimeout(() to {
             toast.classList.remove('show');
         }, 3000);
     }
@@ -755,25 +741,25 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Error en previsualización:', e);
         }
     }
-      
+    
     function updateOvertimeSummary() {  
         const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
-          
+        
         let totalNormalHours = 0;  
         let normalOvertime = 0;  
         let normalAmount = 0;  
-          
+        
         let specialOvertime = 0;  
         let specialAmount = 0;  
         
         let doubleDayCount = 0;
         let doubleDayAmount = 0;
-          
+        
         schedules.forEach(schedule => {  
             totalNormalHours += schedule.normalHours;  
             normalOvertime += schedule.overtimeHours.normal;  
             normalAmount += schedule.normalAmount;  
-              
+            
             specialOvertime += schedule.overtimeHours.special;  
             specialAmount += schedule.specialAmount;  
             
@@ -782,18 +768,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 doubleDayAmount += schedule.doubleDayAmount || 0;
             }
         });  
-          
+        
         // Actualizar la interfaz  
         document.getElementById('normal-hours').textContent = totalNormalHours.toFixed(2) + ' horas';  
         document.getElementById('normal-overtime').textContent = normalOvertime.toFixed(2) + ' horas';  
         document.getElementById('normal-amount').textContent = 'Q' + normalAmount.toFixed(2);  
-          
+        
         document.getElementById('special-overtime').textContent = specialOvertime.toFixed(2) + ' horas';  
         document.getElementById('special-amount').textContent = 'Q' + specialAmount.toFixed(2);  
         
         document.getElementById('double-day-count').textContent = doubleDayCount + ' días';  
         document.getElementById('double-day-amount').textContent = 'Q' + doubleDayAmount.toFixed(2);
-          
+        
         // Calcular total  
         const totalAmount = normalAmount + specialAmount + doubleDayAmount;  
         document.getElementById('total-amount').textContent = 'Q' + totalAmount.toFixed(2);  
