@@ -144,7 +144,7 @@ function manejarEnvioFormulario(e) {
         showToast('Registro actualizado correctamente.', 'success');
         isEditing = false;
         editingIndex = -1;
-        document.querySelector('button[type="submit"]').textContent = 'Guardar y Calcular';
+        form.querySelector('button[type="submit"]').textContent = 'Guardar y Calcular';
     } else {
         // Guardar el registro nuevo
         saveSchedule(  
@@ -655,7 +655,7 @@ function exportToPDF() {
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Totales</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Normales</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Extras</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Día Doble</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; background-color: 'red'; color: white;">Día Doble</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Monto Total</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Ubicación</th>
                 </tr>
