@@ -111,7 +111,22 @@
             padding-bottom: 10px;
             border-bottom: 2px solid var(--primary-color);
         }
-        
+        .form-title::after, .results-title::after, .history-title::after {
+            content: '';
+            position: absolute;
+            width: 0%;
+            height: 3px;
+            left: 0;
+            bottom: -4px;
+            background-color: var(--primary-color);
+            transition: width 0.5s ease;
+        }
+        .form-title:hover::after,
+        .results-title:hover::after,
+        .history-title:hover::after {
+            width: 100%;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
@@ -156,7 +171,6 @@
             min-width: 200px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
         .checkbox-item:hover {
             transform: scale(1.02);
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
@@ -231,7 +245,6 @@
             border-left: 4px solid var(--primary-color);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
-        
         .result-card:hover {
             transform: translateY(-4px);
             box-shadow: 0 6px 15px rgba(0, 0, 0, 0.15);
@@ -327,8 +340,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
-            flex-wrap: wrap;
-            gap: 10px;
         }
         
         .history-actions {
@@ -352,7 +363,7 @@
         }
         
         th, td {
-            padding: 12px;
+            padding: 15px;
             text-align: left;
             border-bottom: 1px solid #eee;
         }
@@ -392,17 +403,14 @@
             display: block;
             margin-bottom: 10px;
             color: var(--dark-color);
-            font-size: 1rem;
         }
         
         .info-box ul {
             padding-left: 20px;
-            margin-bottom: 0;
         }
         
         .info-box li {
             margin-bottom: 5px;
-            line-height: 1.4;
         }
         
         .checkbox-group {
@@ -439,7 +447,6 @@
             opacity: 0;
             transition: opacity 0.3s ease;
             z-index: 1000;
-            max-width: 300px;
         }
         
         .toast.show {
@@ -463,49 +470,25 @@
             border-left: 4px solid var(--primary-color);
         }
         
-        .real-time-results h3 {
-            margin-top: 0;
-            color: var(--dark-color);
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 10px;
-        }
-        
-        .real-time-results p {
-            margin: 8px 0;
-            display: flex;
-            justify-content: space-between;
-        }
-        
-        .real-time-results span {
-            font-weight: 600;
-        }
-        
         .double-day-info {
             display: none;
             background-color: #fff4f4;
             border-left: 4px solid var(--double-day-color);
-            padding: 12px 15px;
+            padding: 15px;
             border-radius: 6px;
             margin-top: 10px;
             font-size: 0.9rem;
-        }
-        
-        .double-day-info strong {
-            color: var(--double-day-color);
         }
         
         .export-actions {
             display: flex;
             gap: 10px;
             margin-top: 20px;
-            flex-wrap: wrap;
         }
         
         .export-actions button {
             width: auto;
             padding: 12px 20px;
-            flex: 1;
-            min-width: 160px;
         }
         
         @media (max-width: 768px) {
@@ -528,20 +511,6 @@
             }
             
             .history-actions, .export-actions {
-                flex-direction: column;
-            }
-            
-            .history-header {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-            
-            th, td {
-                padding: 8px;
-                font-size: 0.9rem;
-            }
-            
-            .action-buttons {
                 flex-direction: column;
             }
         }
@@ -574,26 +543,10 @@
                 border: 2px solid #27ae60;
             }
         }
-
-        .icon {
-            display: inline-block;
-            width: 24px;
-            height: 24px;
-            margin-right: 10px;
-            text-align: center;
-            line-height: 24px;
-        }
-        
-        .group1 {
-            color: var(--group1-color);
-            font-weight: 600;
-        }
-        
-        .group2 {
-            color: var(--group2-color);
-            font-weight: 600;
-        }
     </style>
+    <!-- Biblioteca para generar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
  
 <body>  
@@ -706,27 +659,27 @@
                 <h2 class="results-title">Resumen de Horas</h2>  
                   
                 <div class="result-card normal-hours">  
-                    <h3><span class="icon">⏰</span> Horas Normales Trabajadas</h3>  
+                    <h3><i>⏰</i> Horas Normales Trabajadas</h3>  
                     <div class="result-value" id="normal-hours">0.00 horas</div>  
                     <p class="result-details">Horas dentro del horario regular establecido</p>  
                 </div>  
                   
                 <div class="result-card overtime-normal">  
-                    <h3><span class="icon">📅</span> Horas Extras Normales (Q23.00/hora)</h3>  
+                    <h3><i>📅</i> Horas Extras Normales (Q23.00/hora)</h3>  
                     <div class="result-value" id="normal-overtime">0.00 horas</div>  
                     <p class="result-details">Lunes 1:00am - Sábado antes del turno</p>  
                     <div class="result-value" id="normal-amount">Q0.00</div>  
                 </div>  
                   
                 <div class="result-card overtime-special">  
-                    <h3><span class="icon">📅</span> Horas Extras Especiales (Q31.00/hora)</h3>  
+                    <h3><i>📅</i> Horas Extras Especiales (Q31.00/hora)</h3>  
                     <div class="result-value" id="special-overtime">0.00 horas</div>  
                     <p class="result-details">Sábado después del turno - Domingo 12:00am</p>  
                     <div class="result-value" id="special-amount">Q0.00</div>  
                 </div>
 
                 <div class="result-card double-day">  
-                    <h3><span class="icon">🎯</span> Días Dobles</h3>  
+                    <h3><i>🎯</i> Días Dobles</h3>  
                     <div class="result-value" id="double-day-count">0 días</div>  
                     <p class="result-details">Domingos y festivos con día doble aplicado</p>  
                     <div class="result-value" id="double-day-amount">Q0.00</div>  
@@ -739,10 +692,10 @@
 
                 <div class="export-actions no-print">
                     <button id="print-btn" class="button-info">
-                        <span class="icon">🖨️</span> Imprimir Resultados
+                        <i class="fas fa-print"></i> Imprimir Resultados
                     </button>
                     <button id="pdf-btn" class="button-success">
-                        <span class="icon">📄</span> Exportar a PDF
+                        <i class="fas fa-file-pdf"></i> Exportar a PDF
                     </button>
                 </div>
             </section>  
@@ -752,8 +705,8 @@
             <div class="history-header">
                 <h2 class="history-title">Historial de Horarios</h2>  
                 <div class="history-actions">
-                    <button id="export-btn" class="button-secondary"><span class="icon">📊</span> Exportar CSV</button>
-                    <button id="clear-btn" class="button-danger"><span class="icon">🗑️</span> Limpiar Historial</button>
+                    <button id="export-btn" class="button-secondary">Exportar CSV</button>
+                    <button id="clear-btn" class="button-danger">Limpiar Historial</button>
                 </div>
             </div>
             <table id="schedule-history">  
@@ -819,6 +772,9 @@
     </div>
 
     <div id="toast" class="toast"></div>
+
+    <!-- Incluir Font Awesome para iconos -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
     <script>  
         // Precios fijos (solo modificables en el código)  
@@ -923,10 +879,8 @@
             // Event listener para imprimir
             printBtn.addEventListener('click', printResults);
             
-            // Event listener para exportar a PDF (deshabilitado por ahora)
-            pdfBtn.addEventListener('click', function() {
-                showToast('Exportación a PDF no disponible en este momento', 'error');
-            });
+            // Event listener para exportar a PDF
+            pdfBtn.addEventListener('click', exportToPDF);
               
             form.addEventListener('submit', function(e) {  
                 e.preventDefault();  
@@ -1471,6 +1425,78 @@
                 
                 // Imprimir
                 window.print();
+            }
+            
+            function exportToPDF() {
+                // Usar jsPDF para generar el PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+                
+                // Título
+                doc.setFontSize(20);
+                doc.setTextColor(40, 40, 40);
+                doc.text('Resumen de Horas Extras', 105, 20, { align: 'center' });
+                
+                // Fecha
+                doc.setFontSize(12);
+                doc.setTextColor(128, 128, 128);
+                const now = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+                doc.text(`Generado el: ${now.toLocaleDateString('es-ES', options)}`, 105, 30, { align: 'center' });
+                
+                // Datos
+                let y = 50;
+                
+                // Horas normales
+                doc.setFontSize(16);
+                doc.setTextColor(46, 204, 113);
+                doc.text('Horas Normales Trabajadas', 20, y);
+                doc.setFontSize(14);
+                doc.setTextColor(40, 40, 40);
+                doc.text(document.getElementById('normal-hours').textContent, 20, y + 10);
+                y += 25;
+                
+                // Horas extras normales
+                doc.setFontSize(16);
+                doc.setTextColor(52, 152, 219);
+                doc.text('Horas Extras Normales (Q23.00/hora)', 20, y);
+                doc.setFontSize(14);
+                doc.setTextColor(40, 40, 40);
+                doc.text(document.getElementById('normal-overtime').textContent, 20, y + 10);
+                doc.text(document.getElementById('normal-amount').textContent, 20, y + 20);
+                y += 35;
+                
+                // Horas extras especiales
+                doc.setFontSize(16);
+                doc.setTextColor(230, 126, 34);
+                doc.text('Horas Extras Especiales (Q31.00/hora)', 20, y);
+                doc.setFontSize(14);
+                doc.setTextColor(40, 40, 40);
+                doc.text(document.getElementById('special-overtime').textContent, 20, y + 10);
+                doc.text(document.getElementById('special-amount').textContent, 20, y + 20);
+                y += 35;
+                
+                // Días dobles
+                doc.setFontSize(16);
+                doc.setTextColor(255, 107, 107);
+                doc.text('Días Dobles', 20, y);
+                doc.setFontSize(14);
+                doc.setTextColor(40, 40, 40);
+                doc.text(document.getElementById('double-day-count').textContent, 20, y + 10);
+                doc.text(document.getElementById('double-day-amount').textContent, 20, y + 20);
+                y += 35;
+                
+                // Total
+                doc.setFontSize(18);
+                doc.setTextColor(46, 204, 113);
+                doc.text('Total a recibir por horas extras:', 20, y);
+                doc.setFontSize(20);
+                doc.setTextColor(39, 174, 96);
+                doc.text(document.getElementById('total-amount').textContent, 20, y + 15);
+                
+                // Guardar el PDF
+                doc.save('resumen_horas_extras.pdf');
+                showToast('PDF exportado correctamente.', 'success');
             }
             
             function showToast(message, type = '') {
