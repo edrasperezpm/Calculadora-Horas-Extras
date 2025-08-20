@@ -41,10 +41,9 @@ let isEditing = false;
 document.addEventListener('DOMContentLoaded', function() {  
     const form = document.getElementById('schedule-form');  
     const historyTable = document.getElementById('schedule-history').querySelector('tbody');  
-    const exportBtn = document.getElementById('export-btn');
     const clearBtn = document.getElementById('clear-btn');
-    const printBtn = document.getElementById('print-btn');
     const pdfBtn = document.getElementById('pdf-btn');
+    const textBtn = document.getElementById('text-btn');
     const toast = document.getElementById('toast');
     const isDoubleDayCheckbox = document.getElementById('is-double-day');
     const doubleDayInfo = document.getElementById('double-day-info');
@@ -91,21 +90,19 @@ document.addEventListener('DOMContentLoaded', function() {
         updateRealTimePreview();
     });
     
-    // Event listener para exportar datos
-    exportBtn.addEventListener('click', exportToCSV);
-    
     // Event listener para limpiar historial
     clearBtn.addEventListener('click', clearHistory);
     
-    // Event listener para imprimir
-    printBtn.addEventListener('click', printResults);
-    
     // Event listener para exportar a PDF
     pdfBtn.addEventListener('click', exportToPDF);
+    
+    // Event listener para exportar a texto
+    textBtn.addEventListener('click', exportToText);
       
     form.addEventListener('submit', function(e) {  
         e.preventDefault();  
           
+        const workerName = document.getElementById('worker-name').value;
         const workGroup = document.querySelector('input[name="work-group"]:checked')?.value;  
         const startDate = document.getElementById('date').value;  
         const startTime = document.getElementById('start-time').value;  
@@ -117,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const doubleDayRate = parseFloat(document.getElementById('double-day-rate').value) || DEFAULT_DOUBLE_DAY_RATE;  
         const description = document.getElementById('description').value;  
           
-        if (!workGroup || !startDate || !startTime || !endTime || !location) {  
+        if (!workerName || !workGroup || !startDate || !startTime || !endTime || !location) {  
             showToast('Por favor, complete todos los campos obligatorios.', 'error');
             return;  
         }  
@@ -157,6 +154,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Actualizar registro existente
             updateSchedule(
                 editingIndex,
+                workerName,
                 workGroup, startDate, endDate, startTime, endTime,   
                 totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate,
                 normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay  
@@ -168,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             // Guardar el registro nuevo
             saveSchedule(  
+                workerName,
                 workGroup, startDate, endDate, startTime, endTime,   
                 totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate,
                 normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay  
@@ -227,7 +226,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // FUNCIÓN COMPLETAMENTE CORREGIDA - Maneja transiciones entre días y día doble
+    // FUNCIÓN COMPLETAMENTE CORREGIDA - Maneja transiciones entre días
     function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
         const startDateTime = createDateWithoutTimezone(startDate, startTime);
         const endDateTime = createDateWithoutTimezone(endDate, endTime);
@@ -241,150 +240,77 @@ document.addEventListener('DOMContentLoaded', function() {
         let normalHours = 0;  
         let overtimeNormal = 0;  
         let overtimeSpecial = 0;  
-        let doubleDayApplied = false;
         
         const schedule = WORK_SCHEDULES[workGroup];  
+        let currentTime = new Date(startDateTime);
         
-        // Verificar si aplica día doble
-        const isStartHoliday = isHoliday || isHolidayDate(startDate) || getDayOfWeek(startDate) === 0;
-        const shouldApplyDoubleDay = isStartHoliday && isDoubleDay && isDoubleDayEligible(startDate, isHoliday);
-        
-        // Si aplica día doble, manejar de manera especial
-        if (shouldApplyDoubleDay) {
-            doubleDayApplied = true;
+        // Procesar cada hora del período
+        while (currentTime < endDateTime) {
+            const hourEnd = new Date(currentTime);
+            hourEnd.setHours(currentTime.getHours() + 1);
+            if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
             
-            // Calcular horas trabajadas en el día festivo/domingo
-            const endOfHoliday = new Date(startDateTime);
-            endOfHoliday.setHours(23, 59, 59, 999); // Fin del día inicial
+            const hourDuration = (hourEnd - currentTime) / 3600000;
+            const dayOfWeek = currentTime.getDay();
+            const hourOfDay = currentTime.getHours();
+            const currentDateStr = formatDateForInput(currentTime);
             
-            const holidayHours = Math.min(endDateTime, endOfHoliday) - startDateTime;
-            const holidayHoursDecimal = Math.round((holidayHours / (1000 * 60 * 60)) * 100) / 100;
-            
-            // Las primeras 9 horas se pagan como día doble, el resto como extras especiales
-            if (holidayHoursDecimal > DOUBLE_DAY_HOURS) {
-                overtimeSpecial = holidayHoursDecimal - DOUBLE_DAY_HOURS;
-            }
-            
-            // Si hay horas en días siguientes, procesarlas como normales o extras normales
-            if (endDateTime > endOfHoliday) {
-                const nextDayStart = new Date(endOfHoliday);
-                nextDayStart.setDate(nextDayStart.getDate() + 1);
-                nextDayStart.setHours(0, 0, 0, 0); // Inicio del siguiente día
-                
-                const remainingTime = endDateTime - nextDayStart;
-                const remainingHours = Math.round((remainingTime / (1000 * 60 * 60)) * 100) / 100;
-                
-                // Procesar horas restantes (días normales)
-                let currentTime = new Date(nextDayStart);
-                
-                while (currentTime < endDateTime) {
-                    const hourEnd = new Date(currentTime);
-                    hourEnd.setHours(currentTime.getHours() + 1);
-                    if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
-                    
-                    const hourDuration = (hourEnd - currentTime) / 3600000;
-                    const dayOfWeek = currentTime.getDay();
-                    const hourOfDay = currentTime.getHours();
-                    const currentDateStr = formatDateForInput(currentTime);
-                    
-                    // Verificar si es feriado o domingo (sin día doble aplicado)
-                    if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
-                        overtimeSpecial += hourDuration;
-                        currentTime = hourEnd;
-                        continue;
-                    }
-                    
-                    // Para días laborales
-                    let daySchedule = null;
-                    if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                        daySchedule = schedule.weekday;
-                    } else if (dayOfWeek === 6) {
-                        daySchedule = schedule.saturday;
-                    }
-                    
-                    if (daySchedule) {
-                        const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
-                        
-                        if (isWithinSchedule) {
-                            normalHours += hourDuration;
-                        } else {
-                            // Determinar tipo de hora extra
-                            if (dayOfWeek === 6) { // Sábado
-                                if (hourOfDay < daySchedule.start) {
-                                    overtimeNormal += hourDuration;
-                                } else {
-                                    overtimeSpecial += hourDuration;
-                                }
-                            } else { // Lunes a Viernes
-                                overtimeNormal += hourDuration;
-                            }
-                        }
-                    } else {
-                        // Para cualquier otro caso
-                        overtimeSpecial += hourDuration;
-                    }
-                    
-                    currentTime = hourEnd;
-                }
-            }
-        } else {
-            // Para días normales (sin día doble)
-            let currentTime = new Date(startDateTime);
-            
-            // Procesar cada hora del período
-            while (currentTime < endDateTime) {
-                const hourEnd = new Date(currentTime);
-                hourEnd.setHours(currentTime.getHours() + 1);
-                if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
-                
-                const hourDuration = (hourEnd - currentTime) / 3600000;
-                const dayOfWeek = currentTime.getDay();
-                const hourOfDay = currentTime.getHours();
-                const currentDateStr = formatDateForInput(currentTime);
-                
-                // Verificar si es feriado o domingo
-                if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
-                    overtimeSpecial += hourDuration;
-                    currentTime = hourEnd;
-                    continue;
-                }
-                
-                // Para días laborales
-                let daySchedule = null;
-                if (dayOfWeek >= 1 && dayOfWeek <= 5) {
-                    daySchedule = schedule.weekday;
-                } else if (dayOfWeek === 6) {
-                    daySchedule = schedule.saturday;
-                }
-                
-                if (daySchedule) {
-                    const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
-                    
-                    if (isWithinSchedule) {
-                        normalHours += hourDuration;
-                    } else {
-                        // Determinar tipo de hora extra
-                        if (dayOfWeek === 6) { // Sábado
-                            if (hourOfDay < daySchedule.start) {
-                                overtimeNormal += hourDuration;
-                            } else {
-                                overtimeSpecial += hourDuration;
-                            }
-                        } else { // Lunes a Viernes
-                            // Manejar transición domingo→lunes (12am-1am)
-                            if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
-                                overtimeSpecial += hourDuration;
-                            } else {
-                                overtimeNormal += hourDuration;
-                            }
-                        }
-                    }
-                } else {
-                    // Para cualquier otro caso (debería ser solo domingos, ya manejados arriba)
-                    overtimeSpecial += hourDuration;
-                }
-                
+            // Verificar si es feriado o domingo
+            if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
+                overtimeSpecial += hourDuration;
                 currentTime = hourEnd;
+                continue;
+            }
+            
+            // Para días laborales
+            let daySchedule = null;
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                daySchedule = schedule.weekday;
+            } else if (dayOfWeek === 6) {
+                daySchedule = schedule.saturday;
+            }
+            
+            if (daySchedule) {
+                const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
+                
+                if (isWithinSchedule) {
+                    normalHours += hourDuration;
+                } else {
+                    // Determinar tipo de hora extra
+                    if (dayOfWeek === 6) { // Sábado
+                        if (hourOfDay < daySchedule.start) {
+                            overtimeNormal += hourDuration;
+                        } else {
+                            overtimeSpecial += hourDuration;
+                        }
+                    } else { // Lunes a Viernes
+                        // Manejar transición domingo→lunes (12am-1am)
+                        if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
+                            overtimeSpecial += hourDuration;
+                        } else {
+                            overtimeNormal += hourDuration;
+                        }
+                    }
+                }
+            } else {
+                // Para cualquier otro caso (debería ser solo domingos, ya manejados arriba)
+                overtimeSpecial += hourDuration;
+            }
+            
+            currentTime = hourEnd;
+        }
+        
+        // Manejar día doble para días festivos/domingos
+        let doubleDayApplied = false;
+        const isStartHoliday = isHoliday || isHolidayDate(startDate) || getDayOfWeek(startDate) === 0;
+        
+        if (isStartHoliday && isDoubleDay && isDoubleDayEligible(startDate, isHoliday)) {
+            doubleDayApplied = true;
+            // Ajustar: las primeras 9 horas se pagan como día doble, el resto como especiales
+            if (totalHours > DOUBLE_DAY_HOURS) {
+                overtimeSpecial = totalHours - DOUBLE_DAY_HOURS;
+            } else {
+                overtimeSpecial = 0;
             }
         }
         
@@ -418,10 +344,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return groups[groupKey] || groupKey;  
     }  
       
-    function saveSchedule(workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {  
+    function saveSchedule(workerName, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {  
         let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
           
         schedules.push({  
+            workerName,
             workGroup,  
             startDate,  
             endDate,  
@@ -445,11 +372,12 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('workSchedules', JSON.stringify(schedules));  
     }
     
-    function updateSchedule(index, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {
+    function updateSchedule(index, workerName, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {
         let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
         
         if (index >= 0 && index < schedules.length) {
             schedules[index] = {
+                workerName,
                 workGroup,  
                 startDate,  
                 endDate,  
@@ -481,6 +409,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const schedule = schedules[index];
             
             // Llenar el formulario con los datos del registro
+            document.getElementById('worker-name').value = schedule.workerName || '';
             document.querySelector(`input[name="work-group"][value="${schedule.workGroup}"]`).checked = true;
             document.getElementById('date').value = schedule.startDate;
             document.getElementById('start-time').value = schedule.startTime;
@@ -543,6 +472,7 @@ document.addEventListener('DOMContentLoaded', function() {
         schedules.forEach((schedule, index) => {  
             addToHistoryTable(  
                 index,
+                schedule.workerName,
                 schedule.workGroup,  
                 schedule.startDate,  
                 schedule.endDate,  
@@ -559,13 +489,14 @@ document.addEventListener('DOMContentLoaded', function() {
         });  
     }  
       
-    function addToHistoryTable(index, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtime, doubleDay, amount, location, isHoliday) {  
+    function addToHistoryTable(index, workerName, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtime, doubleDay, amount, location, isHoliday) {  
         const row = document.createElement('tr');  
           
         const groupName = getGroupName(workGroup);  
         const groupClass = workGroup.includes('group1') ? 'group1' : 'group2';  
           
         row.innerHTML = `  
+            <td>${workerName}</td>
             <td class="${groupClass}">${groupName}</td>  
             <td>${startDate}</td>  
             <td>${endDate}</td>  
@@ -632,128 +563,139 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    function exportToCSV() {
+    // FUNCIÓN CORREGIDA: Exportar a PDF (ahora exporta el historial)
+    function exportToPDF() {
         const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
+        const workerName = document.getElementById('worker-name').value || 'Trabajador';
         
         if (schedules.length === 0) {
-            showToast('No hay datos para exportar.', 'error');
+            showToast('No hay historial para exportar.', 'error');
             return;
         }
         
-        // Encabezados CSV
-        let csvContent = "Grupo,Fecha Inicio,Fecha Fin,Hora Inicio,Hora Fin,Horas Totales,Horas Normales,Horas Extras Normales,Horas Extras Especiales,Día Doble,Monto Día Doble,Monto Extras Normales,Monto Extras Especiales,Total,Ubicación,Es Festivo,Descripción\n";
+        // Crear contenido para el PDF
+        let content = `
+            <h2 style="text-align: center; color: #2c3e50;">Historial de Horas Extras</h2>
+            <p style="text-align: center; color: #7f8c8d;">Generado el: ${new Date().toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })}</p>
+            <p style="text-align: center; color: #7f8c8d;">Trabajador: ${workerName}</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Nombre</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Grupo</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Inicio</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Fin</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Inicio</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fin</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Totales</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Normales</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Extras</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Día Doble</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Monto Total</th>
+                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Ubicación</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
         
-        // Datos
         schedules.forEach(schedule => {
-            const row = [
-                getGroupName(schedule.workGroup),
-                schedule.startDate,
-                schedule.endDate,
-                schedule.startTime,
-                schedule.endTime,
-                schedule.totalHours,
-                schedule.normalHours,
-                schedule.overtimeHours.normal,
-                schedule.overtimeHours.special,
-                schedule.doubleDayApplied ? 'Sí' : 'No',
-                schedule.doubleDayAmount || 0,
-                schedule.normalAmount,
-                schedule.specialAmount,
-                (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2),
-                `"${schedule.location}"`, // Entre comillas por si contiene comas
-                schedule.isHoliday ? 'Sí' : 'No',
-                `"${schedule.description || ''}"`
-            ];
+            const totalExtras = (schedule.overtimeHours.normal + schedule.overtimeHours.special).toFixed(2);
+            const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
+            content += `
+                <tr>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.workerName || ''}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${getGroupName(schedule.workGroup)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startDate}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endDate}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startTime}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endTime}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.totalHours.toFixed(2)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.normalHours.toFixed(2)}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${totalExtras}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">Q${totalAmount}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.location}</td>
+                </tr>
+            `;
+        });
+        
+        content += `
+                </tbody>
+            </table>
+        `;
+        
+        // Configuración para html2pdf
+        const options = {
+            margin: 10,
+            filename: `historial_horas_extras_${new Date().toISOString().slice(0, 10)}.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2 },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        
+        // Crear elemento temporal para el contenido
+        const element = document.createElement('div');
+        element.innerHTML = content;
+        
+        // Generar PDF
+        html2pdf().set(options).from(element).save();
+        
+        showToast('PDF del historial generado correctamente.', 'success');
+    }
+    
+    // Función para exportar a texto
+    function exportToText() {
+        const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
+        const workerName = document.getElementById('worker-name').value || 'Trabajador';
+        
+        if (schedules.length === 0) {
+            showToast('No hay historial para exportar.', 'error');
+            return;
+        }
+        
+        let textContent = `Historial de Horas Extras - ${workerName}\n`;
+        textContent += `Generado el: ${new Date().toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric'
+        })}\n\n`;
+        
+        schedules.forEach(schedule => {
+            const totalExtras = (schedule.overtimeHours.normal + schedule.overtimeHours.special).toFixed(2);
+            const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
             
-            csvContent += row.join(',') + '\n';
+            textContent += `Fecha: ${schedule.startDate} a ${schedule.endDate}\n`;
+            textContent += `Horario: ${schedule.startTime} - ${schedule.endTime}\n`;
+            textContent += `Horas Totales: ${schedule.totalHours.toFixed(2)}\n`;
+            textContent += `Horas Normales: ${schedule.normalHours.toFixed(2)}\n`;
+            textContent += `Horas Extras: ${totalExtras}\n`;
+            textContent += `Día Doble: ${schedule.doubleDayApplied ? 'Sí' : 'No'}\n`;
+            textContent += `Monto Total: Q${totalAmount}\n`;
+            textContent += `Ubicación: ${schedule.location}\n`;
+            textContent += '----------------------------------------\n';
         });
         
         // Crear blob y descargar
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const blob = new Blob([textContent], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
+        const link = document.createElement('a');
         const date = new Date().toISOString().slice(0, 10);
         
-        link.setAttribute("href", url);
-        link.setAttribute("download", `horas_extras_${date}.csv`);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `historial_horas_extras_${date}.txt`);
         link.style.visibility = 'hidden';
         
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
         
-        showToast('Datos exportados correctamente.', 'success');
-    }
-    
-    function printResults() {
-        // Actualizar la sección de impresión con los datos actuales
-        document.getElementById('print-normal-hours').textContent = document.getElementById('normal-hours').textContent;
-        document.getElementById('print-normal-overtime').textContent = document.getElementById('normal-overtime').textContent;
-        document.getElementById('print-normal-amount').textContent = document.getElementById('normal-amount').textContent;
-        document.getElementById('print-special-overtime').textContent = document.getElementById('special-overtime').textContent;
-        document.getElementById('print-special-amount').textContent = document.getElementById('special-amount').textContent;
-        document.getElementById('print-double-day-count').textContent = document.getElementById('double-day-count').textContent;
-        document.getElementById('print-double-day-amount').textContent = document.getElementById('double-day-amount').textContent;
-        document.getElementById('print-total-amount').textContent = document.getElementById('total-amount').textContent;
-        
-        // Establecer la fecha actual
-        const now = new Date();
-        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-        document.getElementById('print-date').textContent = now.toLocaleDateString('es-ES', options);
-        
-        // Imprimir
-        window.print();
-    }
-    
-    // FUNCIÓN CORREGIDA: Exportar a PDF
-    function exportToPDF() {
-        // Crear un clon del contenido a exportar
-        const content = document.querySelector('.results-section').cloneNode(true);
-        
-        // Eliminar botones de la sección clonada
-        const buttons = content.querySelector('.export-actions');
-        if (buttons) {
-            buttons.remove();
-        }
-        
-        // Añadir título y fecha
-        const title = document.createElement('h2');
-        title.textContent = 'Resumen de Horas Extras';
-        title.style.textAlign = 'center';
-        title.style.marginBottom = '20px';
-        title.style.color = '#2c3e50';
-        
-        const date = document.createElement('p');
-        date.textContent = 'Generado el: ' + new Date().toLocaleDateString('es-ES', { 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
-        date.style.textAlign = 'center';
-        date.style.color = '#7f8c8d';
-        date.style.marginBottom = '30px';
-        
-        // Crear contenedor para PDF
-        const pdfContainer = document.createElement('div');
-        pdfContainer.appendChild(title);
-        pdfContainer.appendChild(date);
-        pdfContainer.appendChild(content);
-        
-        // Configuración para html2pdf
-        const options = {
-            margin: 10,
-            filename: 'horas_extras.pdf',
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2 },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        
-        // Generar PDF
-        html2pdf().set(options).from(pdfContainer).save();
-        
-        showToast('PDF generado correctamente.', 'success');
+        showToast('Archivo de texto generado correctamente.', 'success');
     }
     
     function showToast(message, type = '') {
@@ -807,7 +749,7 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById('preview-normal').textContent = normalHours.toFixed(2);
             document.getElementById('preview-normal-ot').textContent = overtimeHours.normal.toFixed(2);
             document.getElementById('preview-special-ot').textContent = overtimeHours.special.toFixed(2);
-            document.getElementById('preview-double-day').textContent = doubleDayApplied ? `Sí (Q${doubleDayAmount.toFixed(2)})` : 'No aplica';
+            document.getElementById('preview-double-day').textContent = doubleDayApplied ? `Sí (Q${doubleDayAmount.toFixed(2)} por ${Math.min(totalHours, DOUBLE_DAY_HOURS)} horas)` : 'No aplica';
             document.getElementById('preview-total').textContent = totalAmount.toFixed(2);
         } catch (e) {
             console.error('Error en previsualización:', e);
