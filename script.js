@@ -189,7 +189,8 @@ document.addEventListener('DOMContentLoaded', function() {
         doubleDayInfo.style.display = 'none';
         doubleDayRateGroup.style.display = 'none';
     });  
-      
+
+    // FUNCIÓN CORREGIDA: Formatear fecha para input
     function formatDateForInput(date) {  
         const year = date.getFullYear();  
         const month = String(date.getMonth() + 1).padStart(2, '0');  
@@ -227,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // FUNCIÓN PRINCIPAL CORREGIDA - Cálculo de horas con lógica mejorada
+    // FUNCIÓN COMPLETAMENTE CORREGIDA - Maneja transiciones entre días
     function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
         const startDateTime = createDateWithoutTimezone(startDate, startTime);
         const endDateTime = createDateWithoutTimezone(endDate, endTime);
@@ -236,87 +237,91 @@ document.addEventListener('DOMContentLoaded', function() {
             endDateTime.setDate(endDateTime.getDate() + 1);  
         }  
           
-        const diffMs = endDateTime - startDateTime;  
-        const totalHours = Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;  
+        const totalHours = Math.round((endDateTime - startDateTime) / (1000 * 60 * 60) * 100) / 100;  
           
         let normalHours = 0;  
         let overtimeNormal = 0;  
         let overtimeSpecial = 0;  
-        let doubleDayApplied = false;
-          
-        // Si es feriado o domingo
-        if (isHoliday || isHolidayDate(startDate) || isSunday(startDate)) {  
-            const shouldApplyDoubleDay = isDoubleDay && isDoubleDayEligible(startDate, isHoliday);
-            
-            if (shouldApplyDoubleDay) {
-                doubleDayApplied = true;
-                overtimeSpecial = Math.max(0, totalHours - DOUBLE_DAY_HOURS);
-            } else {
-                overtimeSpecial = totalHours;
-            }
-            
-            return { totalHours, normalHours: 0, overtimeHours: { normal: 0, special: overtimeSpecial }, doubleDayApplied };  
-        }  
-          
-        const schedule = WORK_SCHEDULES[workGroup];  
-        let currentTime = new Date(startDateTime);  
         
-        while (currentTime < endDateTime) {  
-            const segmentEnd = new Date(Math.min(currentTime.getTime() + 3600000, endDateTime.getTime()));
-            const hourDuration = (segmentEnd - currentTime) / 3600000;  
-            const dayOfWeek = currentTime.getDay();  
-            const hourOfDay = currentTime.getHours();  
+        const schedule = WORK_SCHEDULES[workGroup];  
+        let currentTime = new Date(startDateTime);
+        
+        // Procesar cada hora del período
+        while (currentTime < endDateTime) {
+            const hourEnd = new Date(currentTime);
+            hourEnd.setHours(currentTime.getHours() + 1);
+            if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
             
-            const isWeekday = dayOfWeek >= 1 && dayOfWeek <= 5;
-            const isSat = dayOfWeek === 6;
-            const isSun = dayOfWeek === 0;
+            const hourDuration = (hourEnd - currentTime) / 3600000;
+            const dayOfWeek = currentTime.getDay();
+            const hourOfDay = currentTime.getHours();
+            const currentDateStr = formatDateForInput(currentTime);
             
-            let daySchedule = null;
-            if (isWeekday) daySchedule = schedule.weekday;
-            if (isSat) daySchedule = schedule.saturday;
-            
-            let isWithinSchedule = false;
-            if (daySchedule) {
-                isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
+            // Verificar si es feriado o domingo
+            if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
+                overtimeSpecial += hourDuration;
+                currentTime = hourEnd;
+                continue;
             }
             
-            if (isWithinSchedule) {
-                normalHours += hourDuration;
-            } else {
-                // Determinar tipo de hora extra - LÓGICA CORREGIDA
-                if (isSun) {
-                    // Domingo - todas las horas son extras especiales
-                    overtimeSpecial += hourDuration;
-                } else if (isSat) {
-                    // Sábado
-                    if (hourOfDay < (daySchedule?.start || 0)) {
-                        // Antes del horario laboral del sábado - extras normales
-                        overtimeNormal += hourDuration;
-                    } else {
-                        // Después del horario laboral del sábado - extras especiales
-                        overtimeSpecial += hourDuration;
-                    }
+            // Para días laborales
+            let daySchedule = null;
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+                daySchedule = schedule.weekday;
+            } else if (dayOfWeek === 6) {
+                daySchedule = schedule.saturday;
+            }
+            
+            if (daySchedule) {
+                const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
+                
+                if (isWithinSchedule) {
+                    normalHours += hourDuration;
                 } else {
-                    // Lunes a Viernes
-                    if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
-                        // Lunes entre 12:00am y 12:59am - todavía es domingo por la noche (especial)
-                        overtimeSpecial += hourDuration;
-                    } else {
-                        // Resto de la semana - extras normales
-                        overtimeNormal += hourDuration;
+                    // Determinar tipo de hora extra
+                    if (dayOfWeek === 6) { // Sábado
+                        if (hourOfDay < daySchedule.start) {
+                            overtimeNormal += hourDuration;
+                        } else {
+                            overtimeSpecial += hourDuration;
+                        }
+                    } else { // Lunes a Viernes
+                        // Manejar transición domingo→lunes (12am-1am)
+                        if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
+                            overtimeSpecial += hourDuration;
+                        } else {
+                            overtimeNormal += hourDuration;
+                        }
                     }
                 }
+            } else {
+                // Para cualquier otro caso (debería ser solo domingos, ya manejados arriba)
+                overtimeSpecial += hourDuration;
             }
-              
-            currentTime = segmentEnd;
+            
+            currentTime = hourEnd;
         }
-          
+        
+        // Manejar día doble para días festivos/domingos
+        let doubleDayApplied = false;
+        const isStartHoliday = isHoliday || isHolidayDate(startDate) || getDayOfWeek(startDate) === 0;
+        
+        if (isStartHoliday && isDoubleDay && isDoubleDayEligible(startDate, isHoliday)) {
+            doubleDayApplied = true;
+            // Ajustar: las primeras 9 horas se pagan como día doble, el resto como especiales
+            if (totalHours > DOUBLE_DAY_HOURS) {
+                overtimeSpecial = totalHours - DOUBLE_DAY_HOURS;
+            } else {
+                overtimeSpecial = 0;
+            }
+        }
+        
         return {   
             totalHours,   
             normalHours: Math.round(normalHours * 100) / 100,   
-            overtimeHours: {   
-                normal: Math.round(overtimeNormal * 100) / 100,   
-                special: Math.round(overtimeSpecial * 100) / 100   
+            overtimeHours: { 
+                normal: Math.round(overtimeNormal * 100) / 100, 
+                special: Math.round(overtimeSpecial * 100) / 100 
             },
             doubleDayApplied
         };  
@@ -491,7 +496,7 @@ document.addEventListener('DOMContentLoaded', function() {
         row.innerHTML = `  
             <td class="${groupClass}">${groupName}</td>  
             <td>${startDate}</td>  
-            <td>${endDate</td>  
+            <td>${endDate}</td>  
             <td>${startTime}</td>  
             <td>${endTime}</td>  
             <td>${totalHours.toFixed(2)}</td>  
@@ -742,41 +747,3 @@ document.addEventListener('DOMContentLoaded', function() {
           
         let totalNormalHours = 0;  
         let normalOvertime = 0;  
-        let normalAmount = 0;  
-          
-        let specialOvertime = 0;  
-        let specialAmount = 0;  
-        
-        let doubleDayCount = 0;
-        let doubleDayAmount = 0;
-          
-        schedules.forEach(schedule => {  
-            totalNormalHours += schedule.normalHours;  
-            normalOvertime += schedule.overtimeHours.normal;  
-            normalAmount += schedule.normalAmount;  
-              
-            specialOvertime += schedule.overtimeHours.special;  
-            specialAmount += schedule.specialAmount;  
-            
-            if (schedule.doubleDayApplied) {
-                doubleDayCount++;
-                doubleDayAmount += schedule.doubleDayAmount || 0;
-            }
-        });  
-          
-        // Actualizar la interfaz  
-        document.getElementById('normal-hours').textContent = totalNormalHours.toFixed(2) + ' horas';  
-        document.getElementById('normal-overtime').textContent = normalOvertime.toFixed(2) + ' horas';  
-        document.getElementById('normal-amount').textContent = 'Q' + normalAmount.toFixed(2);  
-          
-        document.getElementById('special-overtime').textContent = specialOvertime.toFixed(2) + ' horas';  
-        document.getElementById('special-amount').textContent = 'Q' + specialAmount.toFixed(2);  
-        
-        document.getElementById('double-day-count').textContent = doubleDayCount + ' días';  
-        document.getElementById('double-day-amount').textContent = 'Q' + doubleDayAmount.toFixed(2);
-          
-        // Calcular total  
-        const totalAmount = normalAmount + specialAmount + doubleDayAmount;  
-        document.getElementById('total-amount').textContent = 'Q' + totalAmount.toFixed(2);  
-    }  
-});
