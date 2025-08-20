@@ -296,3 +296,26 @@ tr:hover {
     text-align: center;
     backdrop-filter: blur(10px);
 }
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .action-buttons {
+        display: none !important;
+    }
+    
+    .container {
+        box-shadow: none;
+        padding: 0;
+    }
+    
+    .form-section {
+        display: none;
+    }
+    
+    .main-content {
+        grid-template-columns: 1fr;
+    }
+}
