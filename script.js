@@ -513,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </td>  
             <td>Q${amount.toFixed(2)}</td>  
             <td>${location}</td>  
-            <td class="action-buttons">
+            <td class="no-print action-buttons">
                 <button class="button-warning edit-btn" data-index="${index}">Editar</button>
                 <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
             </td>  
@@ -564,8 +564,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // FUNCIÓN CORREGIDA: Exportar a PDF (ahora exporta el historial)
+    // FUNCIÓN MEJORADA: Exportar a PDF con jsPDF
     function exportToPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
         const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
         const workerName = document.getElementById('worker-name').value || 'Trabajador';
         
@@ -574,65 +577,66 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
         
-        // Crear contenido para el PDF
-        let content = `
-            <h2 style="text-align: center; color: #2c3e50;">Historial de Horas Extras</h2>
-            <p style="text-align: center; color: #7f8c8d;">Generado el: ${new Date().toLocaleDateString('es-ES', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-            })}</p>
-            <p style="text-align: center; color: #7f8c8d;">Trabajador: ${workerName}</p>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                <thead>
-                    <tr>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Nombre</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Grupo</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Inicio</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Fin</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Inicio</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fin</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Totales</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Normales</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Extras</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Día Doble</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Monto Total</th>
-                        <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Ubicación</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
+        // Título
+        doc.setFontSize(20);
+        doc.text('Historial de Horas Extras', 105, 15, { align: 'center' });
         
-        schedules.forEach(schedule => {
+        // Fecha de generación
+        doc.setFontSize(12);
+        doc.setTextColor(100);
+        doc.text(`Generado el: ${new Date().toLocaleDateString('es-ES', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        })}`, 105, 22, { align: 'center' });
+        
+        // Nombre del trabajador
+        doc.text(`Trabajador: ${workerName}`, 105, 28, { align: 'center' });
+        
+        // Preparar datos para la tabla
+        const tableData = schedules.map(schedule => {
             const totalExtras = (schedule.overtimeHours.normal + schedule.overtimeHours.special).toFixed(2);
             const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
-            content += `
-                <tr>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.workerName || ''}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${getGroupName(schedule.workGroup)}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startDate}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endDate}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startTime}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endTime}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.totalHours.toFixed(2)}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.normalHours.toFixed(2)}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${totalExtras}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">Q${totalAmount}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${schedule.location}</td>
-                </tr>
-            `;
+            
+            return [
+                schedule.workerName || '',
+                getGroupName(schedule.workGroup),
+                schedule.startDate,
+                schedule.endDate,
+                schedule.startTime,
+                schedule.endTime,
+                schedule.totalHours.toFixed(2),
+                schedule.normalHours.toFixed(2),
+                totalExtras,
+                schedule.doubleDayApplied ? 'Sí' : 'No',
+                `Q${totalAmount}`,
+                schedule.location
+            ];
         });
         
-        content += `
-                </tbody>
-            </table>
-        `;
+        // Crear la tabla
+        doc.autoTable({
+            head: [['Nombre', 'Grupo', 'Fecha Inicio', 'Fecha Fin', 'Inicio', 'Fin', 'Horas Totales', 'Horas Normales', 'Horas Extras', 'Día Doble', 'Monto Total', 'Ubicación']],
+            body: tableData,
+            startY: 35,
+            theme: 'grid',
+            headStyles: {
+                fillColor: [52, 73, 94],
+                textColor: 255,
+                fontStyle: 'bold'
+            },
+            alternateRowStyles: {
+                fillColor: [240, 240, 240]
+            }
+        });
         
-        // Simular generación de PDF (en un caso real usarías una librería como jsPDF)
-        showToast('Función de exportación a PDF simulada. En una implementación real se generaría el PDF.', 'success');
+        // Guardar el PDF
+        const date = new Date().toISOString().slice(0, 10);
+        doc.save(`historial_horas_extras_${date}.pdf`);
+        
+        showToast('PDF generado correctamente.', 'success');
     }
     
     // Función para exportar a texto
@@ -694,7 +698,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         toast.classList.add('show');
         
-        setTimeout(() to {
+        setTimeout(() => {
             toast.classList.remove('show');
         }, 3000);
     }
@@ -721,7 +725,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         try {
             // Calcular horas
-            const { normalHours, overtimeHours, doubleDayApplied } = calculateHours(  
+            const { totalHours, normalHours, overtimeHours, doubleDayApplied } = calculateHours(  
                 workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay  
             );
             
