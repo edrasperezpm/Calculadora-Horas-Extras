@@ -233,9 +233,8 @@ const totalAmount = doubleDayAmount + specialAmount + normalAmount;
             doubleDayRateGroup.style.display = 'none';
         }
     }
-    
-    
-    // FUNCIÓN COMPLETAMENTE CORREGIDA - Maneja transiciones entre días y día doble
+   
+// FUNCIÓN COMPLETAMENTE REESCRITA - Manejo correcto del día doble
 function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
     const startDateTime = createDateWithoutTimezone(startDate, startTime);
     const endDateTime = createDateWithoutTimezone(endDate, endTime);
@@ -251,10 +250,7 @@ function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHol
     let overtimeSpecial = 0;  
     let doubleDayApplied = false;
     
-    const schedule = WORK_SCHEDULES[workGroup];  
-    let currentTime = new Date(startDateTime);
-    
-    // Verificar si aplica día doble (domingo o festivo)
+    // Verificar si aplica día doble
     const isStartHoliday = isHoliday || isHolidayDate(startDate) || getDayOfWeek(startDate) === 0;
     const shouldApplyDoubleDay = isStartHoliday && isDoubleDay && isDoubleDayEligible(startDate, isHoliday);
     
@@ -262,18 +258,14 @@ function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHol
     if (shouldApplyDoubleDay) {
         doubleDayApplied = true;
         
-        // Las primeras 9 horas se pagan como día doble, el resto como extras especiales
-        if (totalHours <= DOUBLE_DAY_HOURS) {
-            // Todas las horas cubiertas por el día doble
-            overtimeSpecial = 0; // No hay horas extras especiales
-        } else {
-            // Horas extras especiales = total horas - horas cubiertas por día doble
+        // Calcular horas extras especiales (solo las que exceden las 9 horas del día doble)
+        if (totalHours > DOUBLE_DAY_HOURS) {
             overtimeSpecial = totalHours - DOUBLE_DAY_HOURS;
         }
         
         return {   
             totalHours,   
-            normalHours: 0, // No hay horas normales en días festivos/domingos
+            normalHours: 0, // No hay horas normales en días con día doble
             overtimeHours: { 
                 normal: 0, // No hay horas extras normales
                 special: overtimeSpecial 
@@ -281,6 +273,77 @@ function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHol
             doubleDayApplied
         };  
     }
+    
+    // Para días normales (sin día doble)
+    const schedule = WORK_SCHEDULES[workGroup];  
+    let currentTime = new Date(startDateTime);
+    
+    // Procesar cada hora del período
+    while (currentTime < endDateTime) {
+        const hourEnd = new Date(currentTime);
+        hourEnd.setHours(currentTime.getHours() + 1);
+        if (hourEnd > endDateTime) hourEnd.setTime(endDateTime.getTime());
+        
+        const hourDuration = (hourEnd - currentTime) / 3600000;
+        const dayOfWeek = currentTime.getDay();
+        const hourOfDay = currentTime.getHours();
+        const currentDateStr = formatDateForInput(currentTime);
+        
+        // Verificar si es feriado o domingo
+        if (isHolidayDate(currentDateStr) || dayOfWeek === 0) {
+            overtimeSpecial += hourDuration;
+            currentTime = hourEnd;
+            continue;
+        }
+        
+        // Para días laborales
+        let daySchedule = null;
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            daySchedule = schedule.weekday;
+        } else if (dayOfWeek === 6) {
+            daySchedule = schedule.saturday;
+        }
+        
+        if (daySchedule) {
+            const isWithinSchedule = hourOfDay >= daySchedule.start && hourOfDay < daySchedule.end;
+            
+            if (isWithinSchedule) {
+                normalHours += hourDuration;
+            } else {
+                // Determinar tipo de hora extra
+                if (dayOfWeek === 6) { // Sábado
+                    if (hourOfDay < daySchedule.start) {
+                        overtimeNormal += hourDuration;
+                    } else {
+                        overtimeSpecial += hourDuration;
+                    }
+                } else { // Lunes a Viernes
+                    // Manejar transición domingo→lunes (12am-1am)
+                    if (dayOfWeek === 1 && hourOfDay >= 0 && hourOfDay < 1) {
+                        overtimeSpecial += hourDuration;
+                    } else {
+                        overtimeNormal += hourDuration;
+                    }
+                }
+            }
+        } else {
+            // Para cualquier otro caso (debería ser solo domingos, ya manejados arriba)
+            overtimeSpecial += hourDuration;
+        }
+        
+        currentTime = hourEnd;
+    }
+    
+    return {   
+        totalHours,   
+        normalHours: Math.round(normalHours * 100) / 100,   
+        overtimeHours: { 
+            normal: Math.round(overtimeNormal * 100) / 100, 
+            special: Math.round(overtimeSpecial * 100) / 100 
+        },
+        doubleDayApplied
+    };  
+}
     
     // Para días normales (no festivos, no domingos, o sin día doble)
     // Procesar cada hora del período
@@ -759,23 +822,28 @@ function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHol
         const { normalHours, overtimeHours, doubleDayApplied } = calculateHours(  
             workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay  
         );
-        
-        // Calcular montos - CORREGIDO para día doble
-        const normalAmount = overtimeHours.normal * NORMAL_OVERTIME_RATE;  
-        const specialAmount = overtimeHours.special * SPECIAL_OVERTIME_RATE;  
-        const doubleDayAmount = doubleDayApplied ? doubleDayRate : 0;
-        
-        // Total corregido: día doble + extras normales + extras especiales
-        const totalAmount = doubleDayAmount + normalAmount + specialAmount;
-        
-        // Actualizar previsualización
-        document.getElementById('preview-normal').textContent = normalHours.toFixed(2);
-        document.getElementById('preview-normal-ot').textContent = overtimeHours.normal.toFixed(2);
-        document.getElementById('preview-special-ot').textContent = overtimeHours.special.toFixed(2);
-        document.getElementById('preview-double-day').textContent = doubleDayApplied ? 
-            `Sí (Q${doubleDayAmount.toFixed(2)} por ${Math.min(totalHours, DOUBLE_DAY_HOURS)} horas)` : 
-            'No aplica';
-        document.getElementById('preview-total').textContent = totalAmount.toFixed(2);
+// Calcular montos - CORREGIDO para día doble
+const normalAmount = overtimeHours.normal * NORMAL_OVERTIME_RATE;  
+const specialAmount = overtimeHours.special * SPECIAL_OVERTIME_RATE;  
+
+// Día doble: si está aplicado, usar el valor del día doble para las primeras 9 horas
+let doubleDayAmount = 0;
+if (doubleDayApplied) {
+    // Las primeras 9 horas se pagan con el día doble, el resto como extras especiales
+    doubleDayAmount = doubleDayRate;
+}
+
+// Total = horas normales + extras normales + extras especiales + día doble
+// Pero si hay día doble, las horas extras especiales ya solo incluyen las horas beyond las 9
+const totalAmount = normalAmount + specialAmount + doubleDayAmount;
+// Actualizar previsualización
+document.getElementById('preview-normal').textContent = normalHours.toFixed(2);
+document.getElementById('preview-normal-ot').textContent = overtimeHours.normal.toFixed(2);
+document.getElementById('preview-special-ot').textContent = overtimeHours.special.toFixed(2);
+document.getElementById('preview-double-day').textContent = doubleDayApplied ? 
+    `Sí (Q${doubleDayAmount.toFixed(2)} por ${Math.min(totalHours, DOUBLE_DAY_HOURS)} horas)` : 
+    'No aplica';
+document.getElementById('preview-total').textContent = totalAmount.toFixed(2);
     } catch (e) {
         console.error('Error en previsualización:', e);
     }
