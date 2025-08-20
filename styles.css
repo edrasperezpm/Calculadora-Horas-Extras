@@ -11,6 +11,8 @@
     --group1-color: #3498db;
     --group2-color: #9b59b6;
     --double-day-color: #ff6b6b;
+    --extras-normal-color: #3498db;
+    --extras-special-color: #e67e22;
 }
 
 * {
@@ -27,37 +29,13 @@ body {
     padding: 20px;
 }
 
-/* ANIMACIONES */
-@keyframes fadeInUp {
-    0% { opacity: 0; transform: translateY(20px); }
-    100% { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes highlightChange {
-    0% { background-color: #fffbcc; }
-    100% { background-color: transparent; }
-}
-
-@keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.03); }
-}
-
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-}
-
-@keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
-    20%, 40%, 60%, 80% { transform: translateX(5px); }
-}
-
-/* Animación general al cargar */
 .container {
-    animation: fadeInUp 0.8s ease-in-out;
+    max-width: 1400px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
 }
 
 header {
@@ -87,6 +65,7 @@ h1 {
     display: flex;
     flex-wrap: wrap;
     gap: 20px;
+    padding: 0 20px;
 }
 
 .form-section, .results-section {
@@ -192,27 +171,18 @@ button {
 button:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-    animation: pulse 0.5s ease;
-}
-
-.button-secondary {
-    background: linear-gradient(to right, var(--secondary-color), #27ae60);
 }
 
 .button-danger {
     background: linear-gradient(to right, var(--accent-color), #c0392b);
 }
 
-.button-warning {
-    background: linear-gradient(to right, #f39c12, #e67e22);
+.button-success {
+    background: linear-gradient(to right, #2ecc71, #27ae60);
 }
 
 .button-info {
     background: linear-gradient(to right, #3498db, #2980b9);
-}
-
-.button-success {
-    background: linear-gradient(to right, #2ecc71, #27ae60);
 }
 
 .result-card {
@@ -253,16 +223,11 @@ button:hover {
     align-items: center;
 }
 
-.result-card h3 i {
-    margin-right: 10px;
-}
-
 .result-value {
     font-size: 1.8rem;
     font-weight: bold;
     color: var(--primary-color);
     margin: 10px 0;
-    animation: highlightChange 1s ease;
 }
 
 .normal-hours .result-value {
@@ -311,7 +276,7 @@ button:hover {
     padding: 25px;
     background: white;
     border-radius: 10px;
-    margin-top: 20px;
+    margin: 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
@@ -359,17 +324,6 @@ th {
 tr:hover {
     background-color: rgba(52,152,219,0.1);
     transition: background-color 0.3s ease;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 5px;
-}
-
-.action-buttons button {
-    padding: 8px 12px;
-    font-size: 14px;
-    width: auto;
 }
 
 .info-box {
@@ -445,7 +399,6 @@ tr:hover {
 
 .toast.error {
     background-color: var(--accent-color);
-    animation: shake 0.5s ease;
 }
 
 .real-time-results {
@@ -501,6 +454,22 @@ tr:hover {
     min-width: 160px;
 }
 
+.extras-normal {
+    color: var(--extras-normal-color);
+    font-weight: 600;
+}
+
+.extras-special {
+    color: var(--extras-special-color);
+    font-weight: 600;
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
 @media (max-width: 768px) {
     .main-content {
         flex-direction: column;
@@ -533,39 +502,6 @@ tr:hover {
         padding: 8px;
         font-size: 0.9rem;
     }
-    
-    .action-buttons {
-        flex-direction: column;
-    }
-}
-
-/* Estilos para impresión */
-@media print {
-    body * {
-        visibility: hidden;
-    }
-    #print-section, #print-section * {
-        visibility: visible;
-    }
-    #print-section {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        padding: 20px;
-        background: white;
-    }
-    .no-print {
-        display: none !important;
-    }
-    .result-card {
-        box-shadow: none;
-        border: 1px solid #ddd;
-    }
-    .summary-card {
-        box-shadow: none;
-        border: 2px solid #27ae60;
-    }
 }
 
 .icon {
@@ -575,14 +511,4 @@ tr:hover {
     margin-right: 10px;
     text-align: center;
     line-height: 24px;
-}
-
-.group1 {
-    color: var(--group1-color);
-    font-weight: 600;
-}
-
-.group2 {
-    color: var(--group2-color);
-    font-weight: 600;
 }
