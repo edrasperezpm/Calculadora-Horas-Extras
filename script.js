@@ -479,72 +479,6 @@ function updateSchedule(index, workerName, workGroup, startDate, endDate, startT
     }
 }
 
-function editSchedule(index) {
-    const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
-    
-    if (index >= 0 && index < schedules.length) {
-        const schedule = schedules[index];
-        
-        // Llenar el formulario con los datos del registro
-        document.getElementById('worker-name').value = schedule.workerName || '';
-        document.querySelector(`input[name="work-group"][value="${schedule.workGroup}"]`).checked = true;
-        document.getElementById('date').value = schedule.startDate;
-        document.getElementById('start-time').value = schedule.startTime;
-        document.getElementById('end-date').value = schedule.endDate;
-        document.getElementById('end-time').value = schedule.endTime;
-        document.getElementById('location').value = schedule.location;
-        document.getElementById('is-holiday').checked = schedule.isHoliday;
-        document.getElementById('is-double-day').checked = schedule.isDoubleDay;
-        document.getElementById('double-day-rate').value = schedule.doubleDayRate || DEFAULT_DOUBLE_DAY_RATE.toFixed(2);
-        document.getElementById('description').value = schedule.description || '';
-        
-        // Mostrar u ocultar campos de día doble según corresponda
-        const doubleDayInfo = document.getElementById('double-day-info');
-        const doubleDayRateGroup = document.getElementById('double-day-rate-group');
-        if (schedule.isDoubleDay) {
-            doubleDayInfo.style.display = 'block';
-            doubleDayRateGroup.style.display = 'block';
-        } else {
-            doubleDayInfo.style.display = 'none';
-            doubleDayRateGroup.style.display = 'none';
-        }
-        
-        // Cambiar a modo edición
-        isEditing = true;
-        editingIndex = index;
-        document.querySelector('button[type="submit"]').textContent = 'Actualizar Registro';
-        
-        // Scroll al formulario
-        document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
-        
-        showToast('Modo edición activado. Modifica los datos y haz clic en Actualizar.', 'success');
-    }
-}
-
-function cancelEdit() {
-    isEditing = false;
-    editingIndex = -1;
-    document.querySelector('button[type="submit"]').textContent = 'Guardar y Calcular';
-    
-    // Limpiar formulario
-    document.getElementById('schedule-form').reset();
-    
-    // Establecer fechas por defecto
-    const today = new Date();  
-    const formattedDate = formatDateForInput(today);  
-    document.getElementById('date').value = formattedDate;  
-    document.getElementById('end-date').value = formattedDate;
-    document.getElementById('double-day-rate').value = DEFAULT_DOUBLE_DAY_RATE.toFixed(2);
-    
-    // Ocultar campos de día doble
-    const doubleDayInfo = document.getElementById('double-day-info');
-    const doubleDayRateGroup = document.getElementById('double-day-rate-group');
-    doubleDayInfo.style.display = 'none';
-    doubleDayRateGroup.style.display = 'none';
-    
-    showToast('Edición cancelada.', 'success');
-}
-  
 function loadHistory() {  
     const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
     const historyTable = document.getElementById('schedule-history').querySelector('tbody');  
@@ -555,65 +489,41 @@ function loadHistory() {
         addToHistoryTable(  
             index,
             schedule.workerName,
-            schedule.workGroup,  
             schedule.startDate,  
             schedule.endDate,  
             schedule.startTime,  
             schedule.endTime,  
             schedule.totalHours,  
-            schedule.normalHours,  
-            schedule.overtimeHours.normal + schedule.overtimeHours.special,   
+            schedule.overtimeHours.normal,
+            schedule.overtimeHours.special,
             schedule.doubleDayApplied ? 'Sí' : 'No',
             schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0),  
-            schedule.location,  
-            schedule.isHoliday  
+            schedule.location
         );  
     });  
 }  
   
-function addToHistoryTable(index, workerName, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtime, doubleDay, amount, location, isHoliday) {  
+function addToHistoryTable(index, workerName, startDate, endDate, startTime, endTime, totalHours, overtimeNormal, overtimeSpecial, doubleDay, amount, location) {  
     const historyTable = document.getElementById('schedule-history').querySelector('tbody');  
     const row = document.createElement('tr');  
       
-    const groupName = getGroupName(workGroup);  
-    const groupClass = workGroup.includes('group1') ? 'group1' : 'group2';  
-      
     row.innerHTML = `  
         <td>${workerName}</td>
-        <td class="${groupClass}">${groupName}</td>  
         <td>${startDate}</td>  
         <td>${endDate}</td>  
         <td>${startTime}</td>  
         <td>${endTime}</td>  
         <td>${totalHours.toFixed(2)}</td>  
-        <td class="regular-hours">${normalHours.toFixed(2)}</td>  
-        <td style="color: ${overtime > 0 ? '#3498db' : 'inherit'}">  
-            ${overtime > 0 ? overtime.toFixed(2) : '0'}  
-        </td>  
+        <td class="extras-normal">${overtimeNormal.toFixed(2)}</td>  
+        <td class="extras-special">${overtimeSpecial.toFixed(2)}</td>  
         <td style="color: ${doubleDay === 'Sí' ? '#ff6b6b' : 'inherit'}">  
             ${doubleDay}  
         </td>  
         <td>Q${amount.toFixed(2)}</td>  
-        <td>${location</td>  
-        <td class="no-print action-buttons">
-            <button class="button-warning edit-btn" data-index="${index}">Editar</button>
-            <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
-        </td>  
+        <td>${location}</td>  
     `;  
       
     historyTable.appendChild(row);  
-      
-    // Agregar evento al botón de eliminar  
-    row.querySelector('.delete-btn').addEventListener('click', function() {  
-        const indexToDelete = parseInt(this.getAttribute('data-index'));  
-        deleteSchedule(indexToDelete);  
-    });
-    
-    // Agregar evento al botón de editar
-    row.querySelector('.edit-btn').addEventListener('click', function() {
-        const indexToEdit = parseInt(this.getAttribute('data-index'));
-        editSchedule(indexToEdit);
-    });  
 }  
   
 function deleteSchedule(index) {  
@@ -646,7 +556,7 @@ function clearHistory() {
     }
 }
 
-// FUNCIÓN CORREGIDA: Exportar a PDF (ahora exporta el historial)
+// FUNCIÓN CORREGIDA: Exportar a PDF (con los nuevos campos)
 function exportToPDF() {
     const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
     const workerName = document.getElementById('worker-name').value || 'Trabajador';
@@ -671,14 +581,13 @@ function exportToPDF() {
             <thead>
                 <tr>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Nombre</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Grupo</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Inicio</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Fin</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Inicio</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fin</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Totales</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Normales</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Extras</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Extras Normales</th>
+                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Extras Especiales</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Día Doble</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Monto Total</th>
                     <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Ubicación</th>
@@ -688,20 +597,21 @@ function exportToPDF() {
     `;
     
     schedules.forEach(schedule => {
-        const totalExtras = (schedule.overtimeHours.normal + schedule.overtimeHours.special).toFixed(2);
+        const totalExtrasNormal = schedule.overtimeHours.normal.toFixed(2);
+        const totalExtrasSpecial = schedule.overtimeHours.special.toFixed(2);
         const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
+        
         content += `
             <tr>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.workerName || ''}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${getGroupName(schedule.workGroup)}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startDate}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endDate}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startTime}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endTime}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.totalHours.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.normalHours.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${totalExtras}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #3498db;">${totalExtrasNormal}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: #e67e22;">${totalExtrasSpecial}</td>
+                <td style="border: 1px solid #ddd; padding: 8px; color: ${schedule.doubleDayApplied ? '#ff6b6b' : 'inherit'};">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">Q${totalAmount}</td>
                 <td style="border: 1px solid #ddd; padding: 8px;">${schedule.location}</td>
             </tr>
@@ -732,7 +642,7 @@ function exportToPDF() {
     showToast('PDF del historial generado correctamente.', 'success');
 }
 
-// Función para exportar a texto
+// Función para exportar a texto (con los nuevos campos)
 function exportToText() {
     const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
     const workerName = document.getElementById('worker-name').value || 'Trabajador';
@@ -749,19 +659,26 @@ function exportToText() {
         day: 'numeric'
     })}\n\n`;
     
+    // Encabezados de columnas
+    textContent += 'Nombre\tFecha Inicio\tFecha Fin\tInicio\tFin\tHoras Totales\tExtras Normales\tExtras Especiales\tDía Doble\tMonto Total\tUbicación\n';
+    textContent += '--------------------------------------------------------------------------------------------------------------------------------\n';
+    
     schedules.forEach(schedule => {
-        const totalExtras = (schedule.overtimeHours.normal + schedule.overtimeHours.special).toFixed(2);
+        const totalExtrasNormal = schedule.overtimeHours.normal.toFixed(2);
+        const totalExtrasSpecial = schedule.overtimeHours.special.toFixed(2);
         const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
         
-        textContent += `Fecha: ${schedule.startDate} a ${schedule.endDate}\n`;
-        textContent += `Horario: ${schedule.startTime} - ${schedule.endTime}\n`;
-        textContent += `Horas Totales: ${schedule.totalHours.toFixed(2)}\n`;
-        textContent += `Horas Normales: ${schedule.normalHours.toFixed(2)}\n`;
-        textContent += `Horas Extras: ${totalExtras}\n`;
-        textContent += `Día Doble: ${schedule.doubleDayApplied ? 'Sí' : 'No'}\n`;
-        textContent += `Monto Total: Q${totalAmount}\n`;
-        textContent += `Ubicación: ${schedule.location}\n`;
-        textContent += '----------------------------------------\n';
+        textContent += `${schedule.workerName || ''}\t`;
+        textContent += `${schedule.startDate}\t`;
+        textContent += `${schedule.endDate}\t`;
+        textContent += `${schedule.startTime}\t`;
+        textContent += `${schedule.endTime}\t`;
+        textContent += `${schedule.totalHours.toFixed(2)}\t`;
+        textContent += `${totalExtrasNormal}\t`;
+        textContent += `${totalExtrasSpecial}\t`;
+        textContent += `${schedule.doubleDayApplied ? 'Sí' : 'No'}\t`;
+        textContent += `Q${totalAmount}\t`;
+        textContent += `${schedule.location}\n`;
     });
     
     // Crear blob y descargar
@@ -792,7 +709,7 @@ function showToast(message, type = '') {
     
     toast.classList.add('show');
     
-    setTimeout(() {
+    setTimeout(() => {
         toast.classList.remove('show');
     }, 3000);
 }
