@@ -185,6 +185,10 @@ button:hover {
     background: linear-gradient(to right, #3498db, #2980b9);
 }
 
+.button-warning {
+    background: linear-gradient(to right, #f39c12, #e67e22);
+}
+
 .result-card {
     background-color: var(--light-color);
     padding: 20px;
@@ -324,6 +328,17 @@ th {
 tr:hover {
     background-color: rgba(52,152,219,0.1);
     transition: background-color 0.3s ease;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.action-buttons button {
+    padding: 8px 12px;
+    font-size: 14px;
+    width: auto;
 }
 
 .info-box {
@@ -502,6 +517,10 @@ tr:hover {
         padding: 8px;
         font-size: 0.9rem;
     }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
 }
 
 .icon {
@@ -511,4 +530,14 @@ tr:hover {
     margin-right: 10px;
     text-align: center;
     line-height: 24px;
+}
+
+.no-print {
+    display: table-cell;
+}
+
+@media print {
+    .no-print {
+        display: none !important;
+    }
 }
