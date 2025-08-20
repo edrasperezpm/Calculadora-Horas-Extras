@@ -228,14 +228,6 @@
             background: linear-gradient(to right, #f39c12, #e67e22);
         }
         
-        .button-info {
-            background: linear-gradient(to right, #3498db, #2980b9);
-        }
-        
-        .button-success {
-            background: linear-gradient(to right, #2ecc71, #27ae60);
-        }
-        
         .result-card {
             background-color: var(--light-color);
             padding: 20px;
@@ -480,17 +472,6 @@
             font-size: 0.9rem;
         }
         
-        .export-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-        
-        .export-actions button {
-            width: auto;
-            padding: 12px 20px;
-        }
-        
         @media (max-width: 768px) {
             .main-content {
                 flex-direction: column;
@@ -509,44 +490,8 @@
                 text-align: center;
                 gap: 10px;
             }
-            
-            .history-actions, .export-actions {
-                flex-direction: column;
-            }
-        }
-
-        /* Estilos para impresión */
-        @media print {
-            body * {
-                visibility: hidden;
-            }
-            #print-section, #print-section * {
-                visibility: visible;
-            }
-            #print-section {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                padding: 20px;
-                background: white;
-            }
-            .no-print {
-                display: none !important;
-            }
-            .result-card {
-                box-shadow: none;
-                border: 1px solid #ddd;
-            }
-            .summary-card {
-                box-shadow: none;
-                border: 2px solid #27ae60;
-            }
         }
     </style>
-    <!-- Biblioteca para generar PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 </head>
  
 <body>  
@@ -688,16 +633,7 @@
                 <div class="summary-card">  
                     <div class="summary-text">Total a recibir por horas extras:</div>  
                     <div class="summary-value" id="total-amount">Q0.00</div>  
-                </div>
-
-                <div class="export-actions no-print">
-                    <button id="print-btn" class="button-info">
-                        <i class="fas fa-print"></i> Imprimir Resultados
-                    </button>
-                    <button id="pdf-btn" class="button-success">
-                        <i class="fas fa-file-pdf"></i> Exportar a PDF
-                    </button>
-                </div>
+                </div>  
             </section>  
         </div>  
           
@@ -723,7 +659,7 @@
                         <th>Día Doble</th>  
                         <th>Monto Total</th>  
                         <th>Ubicación</th>  
-                        <th class="no-print">Acciones</th>  
+                        <th>Acciones</th>  
                     </tr>  
                 </thead>  
                 <tbody>  
@@ -733,48 +669,7 @@
         </section>  
     </div>  
 
-    <!-- Sección oculta para imprimir -->
-    <div id="print-section" style="display: none;">
-        <h2 style="text-align: center; color: #2c3e50;">Resumen de Horas Extras</h2>
-        <p style="text-align: center; color: #7f8c8d;">Generado el: <span id="print-date"></span></p>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Horas Normales Trabajadas</h3>
-            <p style="font-size: 1.5rem; color: #2ecc71; margin: 10px 0;" id="print-normal-hours">0.00 horas</p>
-            <p style="color: #7f8c8d;">Horas dentro del horario regular establecido</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">Horas Extras Normales (Q23.00/hora)</h3>
-            <p style="font-size: 1.5rem; color: #3498db; margin: 10px 0;" id="print-normal-overtime">0.00 horas</p>
-            <p style="color: #7f8c8d;">Lunes 1:00am - Sábado antes del turno</p>
-            <p style="font-size: 1.5rem; color: #3498db; margin: 10px 0;" id="print-normal-amount">Q0.00</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #e67e22; padding-bottom: 10px;">Horas Extras Especiales (Q31.00/hora)</h3>
-            <p style="font-size: 1.5rem; color: #e67e22; margin: 10px 0;" id="print-special-overtime">0.00 horas</p>
-            <p style="color: #7f8c8d;">Sábado después del turno - Domingo 12:00am</p>
-            <p style="font-size: 1.5rem; color: #e67e22; margin: 10px 0;" id="print-special-amount">Q0.00</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 15px; border: 1px solid #bdc3c7; border-radius: 5px;">
-            <h3 style="color: #2c3e50; border-bottom: 2px solid #ff6b6b; padding-bottom: 10px;">Días Dobles</h3>
-            <p style="font-size: 1.5rem; color: #ff6b6b; margin: 10px 0;" id="print-double-day-count">0 días</p>
-            <p style="color: #7f8c8d;">Domingos y festivos con día doble aplicado</p>
-            <p style="font-size: 1.5rem; color: #ff6b6b; margin: 10px 0;" id="print-double-day-amount">Q0.00</p>
-        </div>
-        
-        <div style="margin: 20px 0; padding: 20px; background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border-radius: 5px;">
-            <h3 style="margin: 0; font-size: 1.5rem;">Total a recibir por horas extras:</h3>
-            <p style="font-size: 2.5rem; font-weight: bold; margin: 10px 0;" id="print-total-amount">Q0.00</p>
-        </div>
-    </div>
-
     <div id="toast" class="toast"></div>
-
-    <!-- Incluir Font Awesome para iconos -->
-    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
 
     <script>  
         // Precios fijos (solo modificables en el código)  
@@ -822,8 +717,6 @@
             const historyTable = document.getElementById('schedule-history').querySelector('tbody');  
             const exportBtn = document.getElementById('export-btn');
             const clearBtn = document.getElementById('clear-btn');
-            const printBtn = document.getElementById('print-btn');
-            const pdfBtn = document.getElementById('pdf-btn');
             const toast = document.getElementById('toast');
             const isDoubleDayCheckbox = document.getElementById('is-double-day');
             const doubleDayInfo = document.getElementById('double-day-info');
@@ -875,12 +768,6 @@
             
             // Event listener para limpiar historial
             clearBtn.addEventListener('click', clearHistory);
-            
-            // Event listener para imprimir
-            printBtn.addEventListener('click', printResults);
-            
-            // Event listener para exportar a PDF
-            pdfBtn.addEventListener('click', exportToPDF);
               
             form.addEventListener('submit', function(e) {  
                 e.preventDefault();  
@@ -997,9 +884,8 @@
             }
               
             function calculateHours(workGroup, startDate, startTime, endDate, endTime, isHoliday, isDoubleDay) {  
-                // Crear fechas sin ajuste de zona horaria para evitar problemas
-                const startDateTime = createDateWithoutTimezone(startDate, startTime);
-                const endDateTime = createDateWithoutTimezone(endDate, endTime);
+                const startDateTime = new Date(`${startDate}T${startTime}`);  
+                const endDateTime = new Date(`${endDate}T${endTime}`);  
                   
                 // Si la hora de fin es anterior a la de inicio, asumimos que es al día siguiente  
                 if (endDateTime <= startDateTime) {  
@@ -1114,13 +1000,6 @@
                     },
                     doubleDayApplied
                 };  
-            }
-            
-            // Función auxiliar para crear fechas sin problemas de zona horaria
-            function createDateWithoutTimezone(dateString, timeString) {
-                const [year, month, day] = dateString.split('-').map(Number);
-                const [hours, minutes] = timeString.split(':').map(Number);
-                return new Date(year, month - 1, day, hours, minutes);
             }
             
             function isSunday(dateString) {
@@ -1303,7 +1182,7 @@
                     </td>  
                     <td>Q${amount.toFixed(2)}</td>  
                     <td>${location}</td>  
-                    <td class="no-print action-buttons">
+                    <td class="action-buttons">
                         <button class="button-warning edit-btn" data-index="${index}">Editar</button>
                         <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
                     </td>  
@@ -1405,98 +1284,6 @@
                 document.body.removeChild(link);
                 
                 showToast('Datos exportados correctamente.', 'success');
-            }
-            
-            function printResults() {
-                // Actualizar la sección de impresión con los datos actuales
-                document.getElementById('print-normal-hours').textContent = document.getElementById('normal-hours').textContent;
-                document.getElementById('print-normal-overtime').textContent = document.getElementById('normal-overtime').textContent;
-                document.getElementById('print-normal-amount').textContent = document.getElementById('normal-amount').textContent;
-                document.getElementById('print-special-overtime').textContent = document.getElementById('special-overtime').textContent;
-                document.getElementById('print-special-amount').textContent = document.getElementById('special-amount').textContent;
-                document.getElementById('print-double-day-count').textContent = document.getElementById('double-day-count').textContent;
-                document.getElementById('print-double-day-amount').textContent = document.getElementById('double-day-amount').textContent;
-                document.getElementById('print-total-amount').textContent = document.getElementById('total-amount').textContent;
-                
-                // Establecer la fecha actual
-                const now = new Date();
-                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                document.getElementById('print-date').textContent = now.toLocaleDateString('es-ES', options);
-                
-                // Imprimir
-                window.print();
-            }
-            
-            function exportToPDF() {
-                // Usar jsPDF para generar el PDF
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
-                
-                // Título
-                doc.setFontSize(20);
-                doc.setTextColor(40, 40, 40);
-                doc.text('Resumen de Horas Extras', 105, 20, { align: 'center' });
-                
-                // Fecha
-                doc.setFontSize(12);
-                doc.setTextColor(128, 128, 128);
-                const now = new Date();
-                const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
-                doc.text(`Generado el: ${now.toLocaleDateString('es-ES', options)}`, 105, 30, { align: 'center' });
-                
-                // Datos
-                let y = 50;
-                
-                // Horas normales
-                doc.setFontSize(16);
-                doc.setTextColor(46, 204, 113);
-                doc.text('Horas Normales Trabajadas', 20, y);
-                doc.setFontSize(14);
-                doc.setTextColor(40, 40, 40);
-                doc.text(document.getElementById('normal-hours').textContent, 20, y + 10);
-                y += 25;
-                
-                // Horas extras normales
-                doc.setFontSize(16);
-                doc.setTextColor(52, 152, 219);
-                doc.text('Horas Extras Normales (Q23.00/hora)', 20, y);
-                doc.setFontSize(14);
-                doc.setTextColor(40, 40, 40);
-                doc.text(document.getElementById('normal-overtime').textContent, 20, y + 10);
-                doc.text(document.getElementById('normal-amount').textContent, 20, y + 20);
-                y += 35;
-                
-                // Horas extras especiales
-                doc.setFontSize(16);
-                doc.setTextColor(230, 126, 34);
-                doc.text('Horas Extras Especiales (Q31.00/hora)', 20, y);
-                doc.setFontSize(14);
-                doc.setTextColor(40, 40, 40);
-                doc.text(document.getElementById('special-overtime').textContent, 20, y + 10);
-                doc.text(document.getElementById('special-amount').textContent, 20, y + 20);
-                y += 35;
-                
-                // Días dobles
-                doc.setFontSize(16);
-                doc.setTextColor(255, 107, 107);
-                doc.text('Días Dobles', 20, y);
-                doc.setFontSize(14);
-                doc.setTextColor(40, 40, 40);
-                doc.text(document.getElementById('double-day-count').textContent, 20, y + 10);
-                doc.text(document.getElementById('double-day-amount').textContent, 20, y + 20);
-                y += 35;
-                
-                // Total
-                doc.setFontSize(18);
-                doc.setTextColor(46, 204, 113);
-                doc.text('Total a recibir por horas extras:', 20, y);
-                doc.setFontSize(20);
-                doc.setTextColor(39, 174, 96);
-                doc.text(document.getElementById('total-amount').textContent, 20, y + 15);
-                
-                // Guardar el PDF
-                doc.save('resumen_horas_extras.pdf');
-                showToast('PDF exportado correctamente.', 'success');
             }
             
             function showToast(message, type = '') {
