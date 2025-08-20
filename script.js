@@ -37,6 +37,7 @@ const WORK_SCHEDULES = {
 // Variables globales
 let editingIndex = -1;
 let isEditing = false;
+let currentWorkerName = '';
 
 // Inicialización cuando el DOM está cargado
 document.addEventListener('DOMContentLoaded', function() {  
@@ -166,7 +167,8 @@ function manejarEnvioFormulario(e) {
 }
 
 function validarYObtenerDatosFormulario() {
-    const workerName = document.getElementById('worker-name').value;
+    const workerNameInput = document.getElementById('worker-name');
+    let workerName = workerNameInput.value;
     const workGroup = document.querySelector('input[name="work-group"]:checked')?.value;  
     const startDate = document.getElementById('date').value;  
     const startTime = document.getElementById('start-time').value;  
@@ -178,10 +180,19 @@ function validarYObtenerDatosFormulario() {
     const doubleDayRate = parseFloat(document.getElementById('double-day-rate').value) || DEFAULT_DOUBLE_DAY_RATE;  
     const description = document.getElementById('description').value;  
       
+    // Si no hay nombre, usar el nombre actual
+    if (!workerName && currentWorkerName) {
+        workerName = currentWorkerName;
+        workerNameInput.value = currentWorkerName;
+    }
+      
     if (!workerName || !workGroup || !startDate || !startTime || !endTime || !location) {  
         showToast('Por favor, complete todos los campos obligatorios.', 'error');
         return null;  
     }  
+      
+    // Guardar el nombre actual para futuros registros
+    currentWorkerName = workerName;
       
     // Si no se especifica fecha de fin, usar la misma fecha de inicio  
     if (!endDate) {  
@@ -219,7 +230,7 @@ function validarYObtenerDatosFormulario() {
 }
 
 function resetFormulario() {
-    document.getElementById('worker-name').value = '';
+    // No limpiar el nombre del trabajador
     document.getElementById('start-time').value = '';  
     document.getElementById('end-time').value = '';  
     document.getElementById('location').value = '';  
@@ -526,8 +537,10 @@ function cancelEdit() {
     editingIndex = -1;
     document.querySelector('button[type="submit"]').textContent = 'Guardar y Calcular';
     
-    // Limpiar formulario
+    // Limpiar formulario pero mantener el nombre
+    const workerName = document.getElementById('worker-name').value;
     document.getElementById('schedule-form').reset();
+    document.getElementById('worker-name').value = workerName;
     
     // Establecer fechas por defecto
     const today = new Date();  
@@ -587,24 +600,25 @@ function addToHistoryTable(index, workerName, startDate, endDate, startTime, end
         </td>  
         <td>Q${amount.toFixed(2)}</td>  
         <td>${location}</td>  
-        <td class="action-buttons">
+        <td class="no-print action-buttons">
             <button class="button-warning edit-btn" data-index="${index}">Editar</button>
             <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
         </td>  
     `;  
       
     historyTable.appendChild(row);  
+      
+    // Agregar evento al botón de eliminar  
+    row.querySelector('.delete-btn').addEventListener('click', function() {  
+        const indexToDelete = parseInt(this.getAttribute('data-index'));  
+        deleteSchedule(indexToDelete);  
+    });
     
-    // Agregar eventos a los botones
+    // Agregar evento al botón de editar
     row.querySelector('.edit-btn').addEventListener('click', function() {
         const indexToEdit = parseInt(this.getAttribute('data-index'));
         editSchedule(indexToEdit);
-    });
-    
-    row.querySelector('.delete-btn').addEventListener('click', function() {
-        const indexToDelete = parseInt(this.getAttribute('data-index'));
-        deleteSchedule(indexToDelete);
-    });
+    });  
 }  
   
 function deleteSchedule(index) {  
@@ -723,7 +737,7 @@ function exportToPDF() {
     showToast('PDF del historial generado correctamente.', 'success');
 }
 
-// Función para exportar a texto (formato mejorado en columnas)
+// Función para exportar a texto (formato mejorado para WhatsApp)
 function exportToText() {
     const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
     const workerName = document.getElementById('worker-name').value || 'Trabajador';
@@ -733,36 +747,33 @@ function exportToText() {
         return;
     }
     
-    let textContent = `HISTORIAL DE HORAS EXTRAS - ${workerName.toUpperCase()}\n`;
+    let textContent = `*HISTORIAL DE HORAS EXTRAS* - ${workerName}\n`;
     textContent += `Generado el: ${new Date().toLocaleDateString('es-ES', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric'
-    })}\n`;
-    textContent += '='.repeat(80) + '\n\n';
+    })}\n\n`;
     
     schedules.forEach((schedule, index) => {
         const totalExtrasNormal = schedule.overtimeHours.normal.toFixed(2);
         const totalExtrasSpecial = schedule.overtimeHours.special.toFixed(2);
+        const totalExtras = (schedule.overtimeHours.normal + schedule.overtimeHours.special).toFixed(2);
         const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
         
-        textContent += `REGISTRO ${index + 1}\n`;
-        textContent += '-'.repeat(40) + '\n';
-        textContent += `Nombre:           ${schedule.workerName || ''}\n`;
-        textContent += `Fecha:            ${schedule.startDate} ${schedule.startDate !== schedule.endDate ? `a ${schedule.endDate}` : ''}\n`;
-        textContent += `Horario:          ${schedule.startTime} - ${schedule.endTime}\n`;
-        textContent += `Ubicación:        ${schedule.location}\n`;
-        textContent += `Total Horas:      ${schedule.totalHours.toFixed(2)} horas\n`;
-        textContent += `Extras Normales:  ${totalExtrasNormal} horas\n`;
-        textContent += `Extras Especiales: ${totalExtrasSpecial} horas\n`;
-        textContent += `Día Doble:        ${schedule.doubleDayApplied ? 'Sí' : 'No'}\n`;
-        textContent += `Monto Total:      Q${totalAmount}\n`;
-        
-        if (schedule.description) {
-            textContent += `Descripción:      ${schedule.description}\n`;
-        }
-        
-        textContent += '\n' + '='.repeat(80) + '\n\n';
+        textContent += `*REGISTRO ${index + 1}*\n`;
+        textContent += `👤 Nombre: ${schedule.workerName || ''}\n`;
+        textContent += `📅 Fecha inicio: ${schedule.startDate}\n`;
+        textContent += `📅 Fecha finalización: ${schedule.endDate}\n`;
+        textContent += `📍 Ubicación: ${schedule.location}\n`;
+        textContent += `⏰ Hora inicio: ${schedule.startTime}\n`;
+        textContent += `⏰ Hora finalización: ${schedule.endTime}\n`;
+        textContent += `⏱️ Horas totales: ${schedule.totalHours.toFixed(2)}\n`;
+        textContent += `📊 Horas extras total: ${totalExtras}\n`;
+        textContent += `📊 Horas extras normales: ${totalExtrasNormal}\n`;
+        textContent += `📊 Horas extras especiales: ${totalExtrasSpecial}\n`;
+        textContent += `🎯 Día doble: ${schedule.doubleDayApplied ? 'Sí' : 'No'}\n`;
+        textContent += `💰 Monto total: Q${totalAmount}\n`;
+        textContent += `\n────────────────────\n\n`;
     });
     
     // Crear blob y descargar
