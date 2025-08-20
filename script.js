@@ -594,7 +594,7 @@ function addToHistoryTable(index, workerName, workGroup, startDate, endDate, sta
             ${doubleDay}  
         </td>  
         <td>Q${amount.toFixed(2)}</td>  
-        <td>${location}</td>  
+        <td>${location</td>  
         <td class="no-print action-buttons">
             <button class="button-warning edit-btn" data-index="${index}">Editar</button>
             <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
@@ -792,7 +792,7 @@ function showToast(message, type = '') {
     
     toast.classList.add('show');
     
-    setTimeout(() => {
+    setTimeout(() {
         toast.classList.remove('show');
     }, 3000);
 }
