@@ -479,6 +479,72 @@ function updateSchedule(index, workerName, workGroup, startDate, endDate, startT
     }
 }
 
+function editSchedule(index) {
+    const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
+    
+    if (index >= 0 && index < schedules.length) {
+        const schedule = schedules[index];
+        
+        // Llenar el formulario con los datos del registro
+        document.getElementById('worker-name').value = schedule.workerName || '';
+        document.querySelector(`input[name="work-group"][value="${schedule.workGroup}"]`).checked = true;
+        document.getElementById('date').value = schedule.startDate;
+        document.getElementById('start-time').value = schedule.startTime;
+        document.getElementById('end-date').value = schedule.endDate;
+        document.getElementById('end-time').value = schedule.endTime;
+        document.getElementById('location').value = schedule.location;
+        document.getElementById('is-holiday').checked = schedule.isHoliday;
+        document.getElementById('is-double-day').checked = schedule.isDoubleDay;
+        document.getElementById('double-day-rate').value = schedule.doubleDayRate || DEFAULT_DOUBLE_DAY_RATE.toFixed(2);
+        document.getElementById('description').value = schedule.description || '';
+        
+        // Mostrar u ocultar campos de día doble según corresponda
+        const doubleDayInfo = document.getElementById('double-day-info');
+        const doubleDayRateGroup = document.getElementById('double-day-rate-group');
+        if (schedule.isDoubleDay) {
+            doubleDayInfo.style.display = 'block';
+            doubleDayRateGroup.style.display = 'block';
+        } else {
+            doubleDayInfo.style.display = 'none';
+            doubleDayRateGroup.style.display = 'none';
+        }
+        
+        // Cambiar a modo edición
+        isEditing = true;
+        editingIndex = index;
+        document.querySelector('button[type="submit"]').textContent = 'Actualizar Registro';
+        
+        // Scroll al formulario
+        document.querySelector('.form-section').scrollIntoView({ behavior: 'smooth' });
+        
+        showToast('Modo edición activado. Modifica los datos y haz clic en Actualizar.', 'success');
+    }
+}
+
+function cancelEdit() {
+    isEditing = false;
+    editingIndex = -1;
+    document.querySelector('button[type="submit"]').textContent = 'Guardar y Calcular';
+    
+    // Limpiar formulario
+    document.getElementById('schedule-form').reset();
+    
+    // Establecer fechas por defecto
+    const today = new Date();  
+    const formattedDate = formatDateForInput(today);  
+    document.getElementById('date').value = formattedDate;  
+    document.getElementById('end-date').value = formattedDate;
+    document.getElementById('double-day-rate').value = DEFAULT_DOUBLE_DAY_RATE.toFixed(2);
+    
+    // Ocultar campos de día doble
+    const doubleDayInfo = document.getElementById('double-day-info');
+    const doubleDayRateGroup = document.getElementById('double-day-rate-group');
+    doubleDayInfo.style.display = 'none';
+    doubleDayRateGroup.style.display = 'none';
+    
+    showToast('Edición cancelada.', 'success');
+}
+  
 function loadHistory() {  
     const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
     const historyTable = document.getElementById('schedule-history').querySelector('tbody');  
@@ -521,9 +587,24 @@ function addToHistoryTable(index, workerName, startDate, endDate, startTime, end
         </td>  
         <td>Q${amount.toFixed(2)}</td>  
         <td>${location}</td>  
+        <td class="action-buttons">
+            <button class="button-warning edit-btn" data-index="${index}">Editar</button>
+            <button class="button-danger delete-btn" data-index="${index}">Eliminar</button>
+        </td>  
     `;  
       
     historyTable.appendChild(row);  
+    
+    // Agregar eventos a los botones
+    row.querySelector('.edit-btn').addEventListener('click', function() {
+        const indexToEdit = parseInt(this.getAttribute('data-index'));
+        editSchedule(indexToEdit);
+    });
+    
+    row.querySelector('.delete-btn').addEventListener('click', function() {
+        const indexToDelete = parseInt(this.getAttribute('data-index'));
+        deleteSchedule(indexToDelete);
+    });
 }  
   
 function deleteSchedule(index) {  
@@ -642,7 +723,7 @@ function exportToPDF() {
     showToast('PDF del historial generado correctamente.', 'success');
 }
 
-// Función para exportar a texto (con los nuevos campos)
+// Función para exportar a texto (formato mejorado en columnas)
 function exportToText() {
     const schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
     const workerName = document.getElementById('worker-name').value || 'Trabajador';
@@ -652,33 +733,36 @@ function exportToText() {
         return;
     }
     
-    let textContent = `Historial de Horas Extras - ${workerName}\n`;
+    let textContent = `HISTORIAL DE HORAS EXTRAS - ${workerName.toUpperCase()}\n`;
     textContent += `Generado el: ${new Date().toLocaleDateString('es-ES', { 
         year: 'numeric', 
         month: 'long', 
         day: 'numeric'
-    })}\n\n`;
+    })}\n`;
+    textContent += '='.repeat(80) + '\n\n';
     
-    // Encabezados de columnas
-    textContent += 'Nombre\tFecha Inicio\tFecha Fin\tInicio\tFin\tHoras Totales\tExtras Normales\tExtras Especiales\tDía Doble\tMonto Total\tUbicación\n';
-    textContent += '--------------------------------------------------------------------------------------------------------------------------------\n';
-    
-    schedules.forEach(schedule => {
+    schedules.forEach((schedule, index) => {
         const totalExtrasNormal = schedule.overtimeHours.normal.toFixed(2);
         const totalExtrasSpecial = schedule.overtimeHours.special.toFixed(2);
         const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
         
-        textContent += `${schedule.workerName || ''}\t`;
-        textContent += `${schedule.startDate}\t`;
-        textContent += `${schedule.endDate}\t`;
-        textContent += `${schedule.startTime}\t`;
-        textContent += `${schedule.endTime}\t`;
-        textContent += `${schedule.totalHours.toFixed(2)}\t`;
-        textContent += `${totalExtrasNormal}\t`;
-        textContent += `${totalExtrasSpecial}\t`;
-        textContent += `${schedule.doubleDayApplied ? 'Sí' : 'No'}\t`;
-        textContent += `Q${totalAmount}\t`;
-        textContent += `${schedule.location}\n`;
+        textContent += `REGISTRO ${index + 1}\n`;
+        textContent += '-'.repeat(40) + '\n';
+        textContent += `Nombre:           ${schedule.workerName || ''}\n`;
+        textContent += `Fecha:            ${schedule.startDate} ${schedule.startDate !== schedule.endDate ? `a ${schedule.endDate}` : ''}\n`;
+        textContent += `Horario:          ${schedule.startTime} - ${schedule.endTime}\n`;
+        textContent += `Ubicación:        ${schedule.location}\n`;
+        textContent += `Total Horas:      ${schedule.totalHours.toFixed(2)} horas\n`;
+        textContent += `Extras Normales:  ${totalExtrasNormal} horas\n`;
+        textContent += `Extras Especiales: ${totalExtrasSpecial} horas\n`;
+        textContent += `Día Doble:        ${schedule.doubleDayApplied ? 'Sí' : 'No'}\n`;
+        textContent += `Monto Total:      Q${totalAmount}\n`;
+        
+        if (schedule.description) {
+            textContent += `Descripción:      ${schedule.description}\n`;
+        }
+        
+        textContent += '\n' + '='.repeat(80) + '\n\n';
     });
     
     // Crear blob y descargar
