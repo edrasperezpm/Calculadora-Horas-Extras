@@ -346,32 +346,43 @@ document.addEventListener('DOMContentLoaded', function() {
         return groups[groupKey] || groupKey;  
     }  
       
-    function saveSchedule(workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {  
-        let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
-          
-        schedules.push({  
-            workGroup,  
-            startDate,  
-            endDate,  
-            startTime,  
-            endTime,  
-            totalHours,  
-            normalHours,  
-            overtimeHours,  
-            doubleDayApplied,
-            doubleDayRate,
-            doubleDayAmount,
-            normalAmount,  
-            specialAmount,  
-            location,  
-            description,  
-            isHoliday,
-            isDoubleDay,
-            id: Date.now() // Agregar ID único para mejor manejo
-        });  
-          
-        localStorage.setItem('workSchedules', JSON.stringify(schedules));  
-    }
+   function saveSchedule(workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {  
+    // Obtener los horarios existentes o crear un array vacío si no existen
+    let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];  
+      
+    // Crear el nuevo objeto de horario
+    const newSchedule = {
+        workGroup,  
+        startDate,  
+        endDate,  
+        startTime,  
+        endTime,  
+        totalHours,  
+        normalHours,  
+        overtimeHours,  
+        doubleDayApplied,
+        doubleDayRate,
+        doubleDayAmount,
+        normalAmount,  
+        specialAmount,  
+        location,  
+        description,  
+        isHoliday,
+        isDoubleDay,
+        id: Date.now() // Agregar ID único para mejor manejo
+    };
+    
+    console.log('Guardando nuevo registro:', newSchedule); // Debug
+    
+    // Añadir el nuevo horario al array
+    schedules.push(newSchedule);  
+    
+    // Guardar el array completo en localStorage
+    localStorage.setItem('workSchedules', JSON.stringify(schedules));
+    
+    console.log('Total de registros después de guardar:', schedules.length); // Debug
+    console.log('Todos los registros:', schedules); // Debug
+} 
     
     function updateSchedule(index, workGroup, startDate, endDate, startTime, endTime, totalHours, normalHours, overtimeHours, doubleDayApplied, doubleDayRate, normalAmount, specialAmount, doubleDayAmount, location, description, isHoliday, isDoubleDay) {
         let schedules = JSON.parse(localStorage.getItem('workSchedules')) || [];
