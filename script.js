@@ -664,22 +664,25 @@ function exportToPDF() {
     // Crear contenido para el PDF
     let content = `
         <style>
-            body { font-family: Arial, sans-serif; }
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            h2 { color: #2c3e50; text-align: center; }
+            p { color: #7f8c8d; text-align: center; }
             table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-            th { background-color: #34495e; color: white; }
+            th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+            th { background-color: #34495e; color: white; font-weight: bold; }
             .extras-normal { color: #3498db; }
             .extras-special { color: #e67e22; }
+            .summary { margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; }
         </style>
-        <h2 style="text-align: center; color: #2c3e50;">Historial de Horas Extras</h2>
-        <p style="text-align: center; color: #7f8c8d;">Generado el: ${new Date().toLocaleDateString('es-ES', { 
+        <h2>Historial de Horas Extras - Servicios Multimedios</h2>
+        <p>Generado el: ${new Date().toLocaleDateString('es-ES', { 
             year: 'numeric', 
             month: 'long', 
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
         })}</p>
-        <p style="text-align: center; color: #7f8c8d;">Trabajador: ${workerName}</p>
+        <p>Trabajador: ${workerName}</p>
         <table>
             <thead>
                 <tr>
@@ -699,10 +702,24 @@ function exportToPDF() {
             <tbody>
     `;
     
+    // Variables para el resumen
+    let totalHorasExtrasNormales = 0;
+    let totalHorasExtrasEspeciales = 0;
+    let totalMonto = 0;
+    let totalDiasDoble = 0;
+    
     schedules.forEach(schedule => {
-        const totalExtrasNormal = schedule.overtimeHours.normal.toFixed(2);
-        const totalExtrasSpecial = schedule.overtimeHours.special.toFixed(2);
-        const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0)).toFixed(2);
+        const totalExtrasNormal = schedule.overtimeHours.normal;
+        const totalExtrasSpecial = schedule.overtimeHours.special;
+        const totalAmount = (schedule.normalAmount + schedule.specialAmount + (schedule.doubleDayAmount || 0));
+        
+        // Sumar al resumen
+        totalHorasExtrasNormales += totalExtrasNormal;
+        totalHorasExtrasEspeciales += totalExtrasSpecial;
+        totalMonto += totalAmount;
+        if (schedule.doubleDayApplied) {
+            totalDiasDoble++;
+        }
         
         content += `
             <tr>
@@ -712,37 +729,64 @@ function exportToPDF() {
                 <td>${schedule.startTime}</td>
                 <td>${schedule.endTime}</td>
                 <td>${schedule.totalHours.toFixed(2)}</td>
-                <td class="extras-normal">${totalExtrasNormal}</td>
-                <td class="extras-special">${totalExtrasSpecial}</td>
+                <td class="extras-normal">${totalExtrasNormal.toFixed(2)}</td>
+                <td class="extras-special">${totalExtrasSpecial.toFixed(2)}</td>
                 <td style="color: ${schedule.doubleDayApplied ? '#ff6b6b' : 'inherit'}">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
-                <td>Q${totalAmount}</td>
+                <td>Q${totalAmount.toFixed(2)}</td>
                 <td>${schedule.location}</td>
             </tr>
         `;
     });
     
+    // Agregar resumen al final
     content += `
             </tbody>
         </table>
+        <div class="summary">
+            <h3>Resumen General</h3>
+            <p>Total Horas Extras Normales: ${totalHorasExtrasNormales.toFixed(2)}</p>
+            <p>Total Horas Extras Especiales: ${totalHorasExtrasEspeciales.toFixed(2)}</p>
+            <p>Total Días Dobles: ${totalDiasDoble}</p>
+            <p><strong>Monto Total: Q${totalMonto.toFixed(2)}</strong></p>
+        </div>
     `;
     
     // Configuración para html2pdf
     const options = {
-        margin: 10,
+        margin: 15,
         filename: `historial_horas_extras_${new Date().toISOString().slice(0, 10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        html2canvas: { 
+            scale: 2,
+            useCORS: true,
+            logging: true
+        },
+        jsPDF: { 
+            unit: 'mm', 
+            format: 'a4', 
+            orientation: 'landscape' 
+        }
     };
     
     // Crear elemento temporal para el contenido
     const element = document.createElement('div');
     element.innerHTML = content;
     
-    // Generar PDF
-    html2pdf().set(options).from(element).save();
+    // Ocultar el elemento temporal
+    element.style.position = 'absolute';
+    element.style.left = '-9999px';
+    document.body.appendChild(element);
     
-    showToast('PDF del historial generado correctamente.', 'success');
+    // Generar PDF
+    html2pdf().set(options).from(element).save().then(() => {
+        // Eliminar el elemento temporal después de generar el PDF
+        document.body.removeChild(element);
+        showToast('PDF del historial generado correctamente.', 'success');
+    }).catch(error => {
+        console.error('Error al generar PDF:', error);
+        document.body.removeChild(element);
+        showToast('Error al generar el PDF. Consulte la consola para más detalles.', 'error');
+    });
 }
 
 // Función para exportar a texto (formato mejorado para WhatsApp)
