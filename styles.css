@@ -282,6 +282,7 @@ button:hover {
     border-radius: 10px;
     margin: 20px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    overflow-x: auto;
 }
 
 .history-header {
@@ -311,6 +312,7 @@ table {
     border-radius: 8px;
     overflow: hidden;
     box-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+    min-width: 1000px;
 }
 
 th, td {
@@ -520,6 +522,44 @@ tr:hover {
     
     .action-buttons {
         flex-direction: column;
+    }
+    
+    .history-section {
+        padding: 15px;
+        margin: 10px;
+    }
+    
+    table {
+        min-width: 1000px;
+    }
+    
+    #schedule-history th, 
+    #schedule-history td {
+        padding: 8px 6px;
+        font-size: 0.8rem;
+        white-space: nowrap;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+        gap: 3px;
+    }
+    
+    .action-buttons button {
+        padding: 6px 8px;
+        font-size: 0.75rem;
+    }
+}
+
+/* Mejoras adicionales para tablets */
+@media (max-width: 1024px) and (min-width: 769px) {
+    #schedule-history {
+        font-size: 0.9rem;
+    }
+    
+    #schedule-history th, 
+    #schedule-history td {
+        padding: 10px 8px;
     }
 }
 
