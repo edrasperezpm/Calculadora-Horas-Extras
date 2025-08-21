@@ -663,6 +663,14 @@ function exportToPDF() {
     
     // Crear contenido para el PDF
     let content = `
+        <style>
+            body { font-family: Arial, sans-serif; }
+            table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #34495e; color: white; }
+            .extras-normal { color: #3498db; }
+            .extras-special { color: #e67e22; }
+        </style>
         <h2 style="text-align: center; color: #2c3e50;">Historial de Horas Extras</h2>
         <p style="text-align: center; color: #7f8c8d;">Generado el: ${new Date().toLocaleDateString('es-ES', { 
             year: 'numeric', 
@@ -672,20 +680,20 @@ function exportToPDF() {
             minute: '2-digit'
         })}</p>
         <p style="text-align: center; color: #7f8c8d;">Trabajador: ${workerName}</p>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <table>
             <thead>
                 <tr>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Nombre</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Inicio</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fecha Fin</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Inicio</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Fin</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Horas Totales</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Extras Normales</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Extras Especiales</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Día Doble</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Monto Total</th>
-                    <th style="border: 1px solid #ddd; padding: 8px; background-color: #34495e; color: white;">Ubicación</th>
+                    <th>Nombre</th>
+                    <th>Fecha Inicio</th>
+                    <th>Fecha Fin</th>
+                    <th>Inicio</th>
+                    <th>Fin</th>
+                    <th>Horas Totales</th>
+                    <th>Extras Normales</th>
+                    <th>Extras Especiales</th>
+                    <th>Día Doble</th>
+                    <th>Monto Total</th>
+                    <th>Ubicación</th>
                 </tr>
             </thead>
             <tbody>
@@ -698,17 +706,17 @@ function exportToPDF() {
         
         content += `
             <tr>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.workerName || ''}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startDate}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endDate}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.startTime}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.endTime}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.totalHours.toFixed(2)}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; color: #3498db;">${totalExtrasNormal}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; color: #e67e22;">${totalExtrasSpecial}</td>
-                <td style="border: 1px solid #ddd; padding: 8px; color: ${schedule.doubleDayApplied ? '#ff6b6b' : 'inherit'};">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">Q${totalAmount}</td>
-                <td style="border: 1px solid #ddd; padding: 8px;">${schedule.location}</td>
+                <td>${schedule.workerName || ''}</td>
+                <td>${schedule.startDate}</td>
+                <td>${schedule.endDate}</td>
+                <td>${schedule.startTime}</td>
+                <td>${schedule.endTime}</td>
+                <td>${schedule.totalHours.toFixed(2)}</td>
+                <td class="extras-normal">${totalExtrasNormal}</td>
+                <td class="extras-special">${totalExtrasSpecial}</td>
+                <td style="color: ${schedule.doubleDayApplied ? '#ff6b6b' : 'inherit'}">${schedule.doubleDayApplied ? 'Sí' : 'No'}</td>
+                <td>Q${totalAmount}</td>
+                <td>${schedule.location}</td>
             </tr>
         `;
     });
